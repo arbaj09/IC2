@@ -1,0 +1,25 @@
+{
+  "xsappname": "zfi-interco",
+  "tenant-mode": "dedicated",
+  "description": "Security configuration for the ZFI Intercompany Transaction Application",
+  "oauth2-configuration": {
+    "redirect-uris": [
+              "https://madiba-dev-subaccount-madiba-dev-zfi-interco-approuter.cfapps.us10-001.hana.ondemand.com/login/callback"
+    ]
+  },
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.User",
+      "description": "Access the ZFI Intercompany Transaction Application"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "User",
+      "description": "ZFI Intercompany Application User",
+      "scope-references": [
+        "$XSAPPNAME.User"
+      ]
+    }
+  ]
+}

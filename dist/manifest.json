@@ -1,0 +1,79 @@
+{
+  "_version": "1.65.0",
+
+  "sap.app": {
+    "id": "ZFI_INTERCO",
+    "type": "application",
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "applicationVersion": { "version": "1.0.0" },
+    "i18n": "i18n/i18n.properties",
+    "dataSources": {}
+  },
+
+  "sap.fiori": {
+    "registrationIds": [],
+    "archeType": "transactional"
+  },
+
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": false
+    }
+  },
+
+  "sap.ui5": {
+
+    "rootView": {
+      "viewName": "ZFI_INTERCO.view.Main",
+      "type": "XML",
+      "async": true,
+      "id": "mainView"
+    },
+
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m":          {},
+        "sap.ui.core":    {},
+        "sap.ui.layout":  {},
+        "sap.ui.table":   {},
+        "sap.ui.unified": {},
+        "sap.uxap":       {}
+      }
+    },
+
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "ZFI_INTERCO.i18n.i18n",
+          "supportedLocales": [""],
+          "fallbackLocale": ""
+        }
+      }
+    },
+
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "viewType": "XML",
+        "viewPath": "ZFI_INTERCO.view",
+        "controlId": "icAppRoot",
+        "controlAggregation": "pages",
+        "async": true
+      },
+      "routes": [],
+      "targets": {}
+    }
+
+  }
+}

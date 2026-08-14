@@ -1,0 +1,14 @@
+{
+  "name": "zfi-interco-approuter",
+  "version": "1.0.0",
+  "description": "Application Router for ZFI Intercompany Transaction Application",
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  },
+  "dependencies": {
+    "@sap/approuter": "^16.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

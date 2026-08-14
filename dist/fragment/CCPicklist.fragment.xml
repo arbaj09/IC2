@@ -1,0 +1,28 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <SelectDialog
+        id="ccPicklistDialog"
+        title="Select Company Code"
+        noDataText="No company codes found."
+        search="onCCPicklistSearch"
+        confirm="onCCPicklistConfirm"
+        cancel="onCCPicklistCancel"
+        growing="true"
+        growingThreshold="50"
+        items="{
+            path: '/referenceData/initiatorCCOptions',
+            templateShareable: false
+        }">
+
+        <StandardListItem
+            title="{companyCode}"
+            description="{name}"
+            info="{country}"
+            
+            iconInset="false"/>
+
+    </SelectDialog>
+
+</core:FragmentDefinition>

@@ -1,0 +1,30 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <SelectDialog
+        id="bpPicklistDialog"
+        title="Select Recipient Business Partner"
+        noDataText="No Business Partners match your search."
+        search="onBPPicklistSearch"
+        confirm="onBPPicklistConfirm"
+        cancel="onBPPicklistCancel"
+        growing="true"
+        growingThreshold="50"
+        items="{
+            path: '/referenceData/bpRelationships',
+            templateShareable: false
+        }">
+
+        <StandardListItem
+            title="{bpForDebit}"
+            description="{= 'Sender: ' + ${senderCC} + '  →  Receiver: ' + ${receiverCC}}"
+            info="{receiverCCName}"
+            infoState="None"
+            icon="sap-icon://business-partner"
+            iconInset="false"
+            wrapping="false"/>
+
+    </SelectDialog>
+
+</core:FragmentDefinition>

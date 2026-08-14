@@ -1,0 +1,65 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:unified="sap.ui.unified"
+    xmlns:uxap="sap.uxap">
+
+    <uxap:ObjectPageSection id="sectionAttachments" title="Comments &amp; Attachments" titleUppercase="false">
+        <uxap:subSections>
+
+            <uxap:ObjectPageSubSection title="Initiator Comments" titleUppercase="false">
+                <uxap:blocks>
+                    <TextArea value="{/headerData/comments}" rows="4" growing="true" growingMaxLines="8"
+                              placeholder="Enter comments or context for the Recipient regarding this transaction. These are visible in the workflow notification and on the review screen."
+                              editable="{/appState/isEditMode}"
+                              width="100%"/>
+                </uxap:blocks>
+            </uxap:ObjectPageSubSection>
+
+            <uxap:ObjectPageSubSection title="Supporting Documents" titleUppercase="false">
+                <uxap:blocks>
+                    <VBox>
+                        <Table id="attachmentTable" items="{/headerData/attachments}"
+                               mode="None" fixedLayout="false" noDataText="No attachments">
+                            <columns>
+                                <Column><Text text="File Name"/></Column>
+                                <Column width="70px"><Text text="Type"/></Column>
+                                <Column width="80px"><Text text="Size"/></Column>
+                                <Column><Text text="Uploaded By"/></Column>
+                                <Column width="110px"><Text text="Date"/></Column>
+                                <Column width="80px" hAlign="Center"><Text text="Action"/></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <Text text="{fileName}"/>
+                                        <Text text="{fileType}"/>
+                                        <Text text="{fileSize}"/>
+                                        <Text text="{uploader}"/>
+                                        <Text text="{uploadDate}"/>
+                                        <Button icon="sap-icon://delete" type="Transparent"
+                                                enabled="{= ${/appState/isEditMode} &amp;&amp; !${isSystem}}"
+                                                press="onAttachmentDelete"
+                                                tooltip="Delete attachment"/>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                        <HBox class="sapUiSmallMarginTop" alignItems="Center">
+                            <unified:FileUploader id="fileUploader" name="attachments"
+                                multiple="true" buttonText="Attach File" buttonOnly="false"
+                                sameFilenameAllowed="true" change="onAttachmentAdd"
+                                fileType="pdf,xlsx,docx,png,jpg,jpeg" maximumFileSize="10"
+                                enabled="{/appState/isEditMode}"
+                                style="Emphasized"/>
+                            <Text text="Supported: PDF, XLSX, DOCX, PNG, JPG — max 10 MB. Attachments are linked to both posted FI documents via GOS on submission."
+                                  wrapping="true" class="sapUiSmallMarginBegin"/>
+                        </HBox>
+                    </VBox>
+                </uxap:blocks>
+            </uxap:ObjectPageSubSection>
+
+        </uxap:subSections>
+    </uxap:ObjectPageSection>
+
+</core:FragmentDefinition>

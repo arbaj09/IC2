@@ -1,0 +1,47 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:uxap="sap.uxap">
+
+    <uxap:ObjectPageSection id="sectionWorkflow" title="Workflow &amp; Status" titleUppercase="false">
+        <uxap:subSections>
+            <uxap:ObjectPageSubSection title="" titleUppercase="false">
+                <uxap:blocks>
+                    <VBox alignItems="Center" height="200px">
+                        <HBox class="sapUiMediumMarginTop" alignItems="Center">
+                            <VBox alignItems="Center" class="sapUiSmallMarginEnd">
+                                <core:Icon src="sap-icon://pending" size="2rem"
+                                           color="var(--sapWarningColor)"/>
+                                <Text text="Draft" class="sapUiTinyMarginTop"/>
+                            </VBox>
+                            <core:Icon src="sap-icon://arrow-right" size="1.5rem"
+                                       color="var(--sapNeutralElementColor)" class="sapUiSmallMarginEnd"/>
+                            <VBox alignItems="Center" class="sapUiSmallMarginEnd">
+                                <core:Icon src="sap-icon://outbox" size="2rem"
+                                           color="var(--sapNeutralElementColor)"/>
+                                <Text text="Submitted" class="sapUiTinyMarginTop"/>
+                            </VBox>
+                            <core:Icon src="sap-icon://arrow-right" size="1.5rem"
+                                       color="var(--sapNeutralElementColor)" class="sapUiSmallMarginEnd"/>
+                            <VBox alignItems="Center" class="sapUiSmallMarginEnd">
+                                <core:Icon src="sap-icon://approvals" size="2rem"
+                                           color="var(--sapNeutralElementColor)"/>
+                                <Text text="Reviewed" class="sapUiTinyMarginTop"/>
+                            </VBox>
+                            <core:Icon src="sap-icon://arrow-right" size="1.5rem"
+                                       color="var(--sapNeutralElementColor)" class="sapUiSmallMarginEnd"/>
+                            <VBox alignItems="Center">
+                                <core:Icon src="sap-icon://complete" size="2rem"
+                                           color="var(--sapNeutralElementColor)"/>
+                                <Text text="Posted" class="sapUiTinyMarginTop"/>
+                            </VBox>
+                        </HBox>
+                        <Text text="Workflow history and approval comments will appear here after submission."
+                              textAlign="Center" class="sapUiMediumMarginTop" width="450px"/>
+                    </VBox>
+                </uxap:blocks>
+            </uxap:ObjectPageSubSection>
+        </uxap:subSections>
+    </uxap:ObjectPageSection>
+
+</core:FragmentDefinition>

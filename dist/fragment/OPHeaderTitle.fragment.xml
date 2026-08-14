@@ -1,0 +1,44 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:uxap="sap.uxap">
+
+    <uxap:ObjectPageDynamicHeaderTitle>
+
+        <uxap:expandedHeading>
+            <FlexBox alignItems="Center">
+                <Avatar displaySize="M" backgroundColor="Accent6" initials="IC"
+                        class="sapUiSmallMarginEnd"/>
+                <VBox>
+                    <Title text="Intercompany Transaction" level="H2" wrapping="false"/>
+                    <Label text="{= 'ZFI_INTERCO  ·  ' + ${/workflow/intercoRef}}"
+                           class="sapUiTinyMarginTop"/>
+                </VBox>
+            </FlexBox>
+        </uxap:expandedHeading>
+
+        <uxap:snappedHeading>
+            <FlexBox alignItems="Center">
+                <Avatar displaySize="XS" backgroundColor="Accent6" initials="IC"
+                        class="sapUiSmallMarginEnd"/>
+                <VBox>
+                    <Title text="Intercompany Transaction — ZFI_INTERCO" level="H5" wrapping="false"/>
+                    <Label text="{= (${/headerData/initiatorCC} || '—') + '  →  ' + (${/headerData/recipientCC} || '—') + '  ·  ' + (${/headerData/totalIntercoAmount} || '0.00') + ' ' + ${/headerData/currency} + '  ·  ' + ${/workflow/intercoRef}}"/>
+                </VBox>
+            </FlexBox>
+        </uxap:snappedHeading>
+
+        <uxap:actions>
+            <Button text="Create"
+                    icon="sap-icon://add"
+                    type="Emphasized"
+                    press="onCreateNew"
+                    visible="{= !${/appState/isEditMode}}"/>
+            <ObjectStatus text="{/workflow/status}" state="{/workflow/statusState}" inverted="true"/>
+            <ObjectStatus text="{/headerData/documentTypeCode}" state="Information"
+                          class="sapUiSmallMarginBegin"/>
+        </uxap:actions>
+
+    </uxap:ObjectPageDynamicHeaderTitle>
+
+</core:FragmentDefinition>

@@ -1,0 +1,132 @@
+_schema-version: "3.1"
+
+ID: zfi-interco
+
+version: 1.0.0
+
+description: "ZFI Intercompany Transaction Application"
+
+parameters:
+  enable-parallel-deployments: true
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+
+modules:
+
+  # ─────────────────────────────────────────────
+  # A. HTML5 UI5 Application
+  # ─────────────────────────────────────────────
+
+  - name: zfi-interco-app
+    type: html5
+    path: .
+    build-parameters:
+      builder: custom
+      commands:
+        - npm run build
+        - powershell -Command "Compress-Archive -Path dist\* -DestinationPath dist\zfi-interco-app.zip"
+      build-result: dist
+      supported-platforms: []
+
+
+  # ─────────────────────────────────────────────
+  # B. HTML5 Content Deployer
+  # ─────────────────────────────────────────────
+
+  - name: zfi-interco-deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: zfi-interco-html5-host
+        parameters:
+          content-target: true
+
+    build-parameters:
+      build-result: resources
+      requires:
+        - name: zfi-interco-app
+          artifacts:
+            - zfi-interco-app.zip
+          target-path: resources/
+
+
+  # ─────────────────────────────────────────────
+  # C. Application Router
+  # ─────────────────────────────────────────────
+
+  - name: zfi-interco-approuter
+    type: approuter.nodejs
+    path: approuter
+
+    parameters:
+      disk-quota: 256M
+      memory: 256M
+
+    requires:
+      - name: zfi-interco-xsuaa
+      - name: zfi-interco-html5-runtime
+      - name: zfi-interco-destination
+
+
+resources:
+
+  # ─────────────────────────────────────────────
+  # D. XSUAA
+  # ─────────────────────────────────────────────
+
+  - name: zfi-interco-xsuaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      service-name: zfi-interco-xsuaa
+      path: ./xs-security.json
+
+
+  # ─────────────────────────────────────────────
+  # E. HTML5 Repository Host
+  # ─────────────────────────────────────────────
+
+  - name: zfi-interco-html5-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+      service-name: zfi-interco-html5-host
+
+
+  # ─────────────────────────────────────────────
+  # F. HTML5 Repository Runtime
+  # ─────────────────────────────────────────────
+
+  - name: zfi-interco-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
+      service-name: zfi-interco-html5-runtime
+
+
+  # ─────────────────────────────────────────────
+  # G. Destination Service
+  # ─────────────────────────────────────────────
+
+  - name: zfi-interco-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+      service-name: zfi-interco-destination
+
+      config:
+        HTML5Runtime_enabled: true
+
+        init_data:
+          subaccount:
+            existing_destinations_policy: ignore
+
+            destinations: []

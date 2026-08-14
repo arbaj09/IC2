@@ -1,0 +1,93 @@
+<mvc:View
+    controllerName="ZFI_INTERCO.controller.Main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:uxap="sap.uxap"
+    displayBlock="true">
+
+    <App id="icAppRoot">
+
+        <uxap:ObjectPageLayout
+            id="mainPage"
+            busy="{/appState/isBusy}"
+            showFooter="{= ${/appState/isHeaderEditable} || ${/appState/isRecipientEditable}}"
+            alwaysShowContentHeader="false"
+            upperCaseAnchorBar="false"
+            enableLazyLoading="false"
+            backgroundDesignAnchorBar="Solid">
+
+            <uxap:headerTitle>
+                <core:Fragment fragmentName="ZFI_INTERCO.fragment.OPHeaderTitle" type="XML"/>
+            </uxap:headerTitle>
+
+            <uxap:headerContent>
+                <core:Fragment fragmentName="ZFI_INTERCO.fragment.OPHeaderContent" type="XML"/>
+            </uxap:headerContent>
+
+            <uxap:sections>
+                <!-- 1. DOCUMENT TYPE SECTION -->
+                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionHeaderData" type="XML"/>
+
+                <!-- 2. BUSINESS PARTNERS (INITIATOR/RECIPIENT) SECTION -->
+                <!-- <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionPartyDetails" type="XML"/> -->
+
+                <!-- 3. DOCUMENT DETAILS SECTION -->
+                <!-- <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionDocDetails" type="XML"/> -->
+
+                <!-- ADDITIONAL FINANCIAL & WORKFLOW SECTIONS -->
+                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionInitiatorGL" type="XML"/>
+                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionRecipientGL" type="XML"/>
+                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionAttachments" type="XML"/>
+                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionWorkflow" type="XML"/>
+            </uxap:sections>
+
+            <uxap:footer>
+                <OverflowToolbar>
+                    <!-- Phase 1: Initiator editing (before submission) -->
+                    <Button text="Delete Draft"
+                            type="Negative"
+                            icon="sap-icon://delete"
+                            press="onDeleteDraft"
+                            visible="{/appState/isHeaderEditable}"/>
+                    <ToolbarSpacer/>
+                    <Button text="Cancel"
+                            icon="sap-icon://cancel"
+                            press="onCancel"
+                            visible="{/appState/isHeaderEditable}"/>
+                    <Button text="Save as Draft (F5)"
+                            icon="sap-icon://save"
+                            press="onSaveDraft"
+                            class="sapUiSmallMarginBegin"
+                            visible="{/appState/isHeaderEditable}"/>
+                    <Button text="Submit to Recipient"
+                            type="Emphasized"
+                            icon="sap-icon://outbox"
+                            press="onSubmitToRecipient"
+                            class="sapUiSmallMarginBegin"
+                            visible="{/appState/isHeaderEditable}"/>
+
+                    <!-- Phase 2: Recipient editing (after submission) -->
+                    <!-- <Button text="Cancel"
+                            icon="sap-icon://cancel"
+                            press="onCancel"
+                            visible="{/appState/isRecipientEditable}"/> -->
+                    <Button text="Post"
+                            type="Accept"
+                            icon="sap-icon://accept"
+                            press="onPostDocument"
+                            class="sapUiSmallMarginBegin"
+                            visible="{/appState/isRecipientEditable}"/>
+                    
+                    <Button text="Submit to Approve"
+                            type="Emphasized"
+                            icon="sap-icon://workflow-tasks"
+                            press="onSubmitToApprove"
+                            class="sapUiSmallMarginBegin"
+                            visible="{/appState/isRecipientEditable}"/>
+                </OverflowToolbar>
+            </uxap:footer>
+
+        </uxap:ObjectPageLayout>
+    </App>
+</mvc:View>

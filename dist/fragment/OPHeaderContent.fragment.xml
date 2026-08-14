@@ -1,0 +1,54 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <FlexBox wrap="Wrap" alignItems="Start" class="sapUiSmallMarginBottom">
+
+        <VBox class="sapUiLargeMarginEnd">
+            <Label text="TRANSACTION TYPE " design="Bold" class="sapUiTinyMarginBottom"/>
+            <ObjectStatus
+                text="{/headerData/transactionType}"
+                state="{path: '/headerData/transactionType', formatter: '.formatter.transactionTypeState'}"
+                inverted="false"/>
+        </VBox>
+
+        <VBox class="sapUiLargeMarginEnd">
+            <Label text="INITIATOR" design="Bold" class="sapUiTinyMarginBottom"/>
+            <Text text="{parts: [{path: '/headerData/initiatorCC'}, {path: '/headerData/initiatorCCName'}], formatter: '.formatter.companyCodeDisplay'}"/>
+        </VBox>
+
+        <VBox class="sapUiLargeMarginEnd">
+            <Label text="RECIPIENT" design="Bold" class="sapUiTinyMarginBottom"/>
+            <Text text="{parts: [{path: '/headerData/recipientCC'}, {path: '/headerData/recipientCCName'}], formatter: '.formatter.companyCodeDisplay'}"/>
+        </VBox>
+
+        <VBox class="sapUiLargeMarginEnd">
+            <Label text="TOTAL AMOUNT" design="Bold" class="sapUiTinyMarginBottom"/>
+            <ObjectStatus
+                text="{parts: [{path: '/headerData/totalIntercoAmount'}, {path: '/headerData/currency'}], formatter: '.formatter.amountWithCurrency'}"
+                state="Information"/>
+        </VBox>
+
+        <VBox class="sapUiLargeMarginEnd">
+            <Label text="POSTING DATE" design="Bold" class="sapUiTinyMarginBottom"/>
+            <Text text="{path: '/headerData/postingDate', formatter: '.formatter.nullable'}"
+                  renderWhitespace="false"/>
+            <ObjectStatus
+                text="{/headerData/periodStatusText}"
+                state="{/headerData/periodStatusState}"
+                icon="{/headerData/periodStatusIcon}"
+                class="sapUiTinyMarginTop"/>
+        </VBox>
+
+        <VBox>
+            <Label text="BALANCE" design="Bold" class="sapUiTinyMarginBottom"/>
+            <ObjectStatus
+                text="{path: '/initiatorBalance/isBalanced', formatter: '.formatter.balancedText'}"
+                state="{path: '/initiatorBalance/isBalanced', formatter: '.formatter.balancedState'}"
+                icon="{path: '/initiatorBalance/isBalanced', formatter: '.formatter.balancedIcon'}"
+                inverted="true"/>
+        </VBox>
+
+    </FlexBox>
+
+</core:FragmentDefinition>

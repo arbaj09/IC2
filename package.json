@@ -5,7 +5,9 @@
   "scripts": {
     "start": "ui5 serve --open index.html",
     "start:legacy": "npx http-server ./webapp -p 4000 -o --cors",
-    "build": "ui5 build --clean-dest"
+    "build": "ui5 build --clean-dest",
+    "build:mta": "mbt build",
+    "deploy": "cf8 deploy mta_archives/zfi-interco_1.0.0.mtar --retries 0"
   },
   "devDependencies": {
     "@ui5/cli": "^3.0.0",
