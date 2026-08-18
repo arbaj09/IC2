@@ -3,91 +3,437 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
+    xmlns:table="sap.ui.table"
     xmlns:uxap="sap.uxap"
+    xmlns:layout="sap.ui.layout"
     displayBlock="true">
 
     <App id="icAppRoot">
 
-        <uxap:ObjectPageLayout
-            id="mainPage"
-            busy="{/appState/isBusy}"
-            showFooter="{= ${/appState/isHeaderEditable} || ${/appState/isRecipientEditable}}"
-            alwaysShowContentHeader="false"
-            upperCaseAnchorBar="false"
-            enableLazyLoading="false"
-            backgroundDesignAnchorBar="Solid">
+        <!-- ========================================================= -->
+        <!-- SEARCH / LIST SCREEN - SHOWN FIRST                       -->
+        <!-- ========================================================= -->
+        <Page
+            id="searchPage"
+            title="IC Entries"
+            showHeader="false">
 
-            <uxap:headerTitle>
-                <core:Fragment fragmentName="ZFI_INTERCO.fragment.OPHeaderTitle" type="XML"/>
-            </uxap:headerTitle>
+            <content>
 
-            <uxap:headerContent>
-                <core:Fragment fragmentName="ZFI_INTERCO.fragment.OPHeaderContent" type="XML"/>
-            </uxap:headerContent>
+                <!-- Variant / Filter Header -->
+                <VBox class="sapUiMediumMargin">
 
-            <uxap:sections>
-                <!-- 1. DOCUMENT TYPE SECTION -->
-                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionHeaderData" type="XML"/>
+                    <!-- Standard + Go -->
+                    <HBox
+                        alignItems="Center"
+                        justifyContent="SpaceBetween"
+                        class="sapUiSmallMarginBottom">
 
-                <!-- 2. BUSINESS PARTNERS (INITIATOR/RECIPIENT) SECTION -->
-                <!-- <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionPartyDetails" type="XML"/> -->
+                        <HBox alignItems="Center">
 
-                <!-- 3. DOCUMENT DETAILS SECTION -->
-                <!-- <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionDocDetails" type="XML"/> -->
+                            <!-- <Label
+                                text="Standard"
+                                class="sapUiSmallMarginEnd"/>
 
-                <!-- ADDITIONAL FINANCIAL & WORKFLOW SECTIONS -->
-                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionInitiatorGL" type="XML"/>
-                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionRecipientGL" type="XML"/>
-                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionAttachments" type="XML"/>
-                <core:Fragment fragmentName="ZFI_INTERCO.fragment.SectionWorkflow" type="XML"/>
-            </uxap:sections>
+                            <Button
+                                text="Standard"
+                                type="Transparent"
+                                icon="sap-icon://slim-arrow-down"
+                               /> -->
+                        </HBox>
 
-            <uxap:footer>
-                <OverflowToolbar>
-                    <!-- Phase 1: Initiator editing (before submission) -->
-                    <Button text="Delete Draft"
-                            type="Negative"
-                            icon="sap-icon://delete"
-                            press="onDeleteDraft"
-                            visible="{/appState/isHeaderEditable}"/>
-                    <ToolbarSpacer/>
-                    <Button text="Cancel"
-                            icon="sap-icon://cancel"
-                            press="onCancel"
-                            visible="{/appState/isHeaderEditable}"/>
-                    <Button text="Save as Draft (F5)"
-                            icon="sap-icon://save"
-                            press="onSaveDraft"
-                            class="sapUiSmallMarginBegin"
-                            visible="{/appState/isHeaderEditable}"/>
-                    <Button text="Submit to Recipient"
-                            type="Emphasized"
-                            icon="sap-icon://outbox"
-                            press="onSubmitToRecipient"
-                            class="sapUiSmallMarginBegin"
-                            visible="{/appState/isHeaderEditable}"/>
+                        <HBox>
 
-                    <!-- Phase 2: Recipient editing (after submission) -->
-                    <!-- <Button text="Cancel"
-                            icon="sap-icon://cancel"
-                            press="onCancel"
-                            visible="{/appState/isRecipientEditable}"/> -->
-                    <Button text="Post"
-                            type="Accept"
-                            icon="sap-icon://accept"
-                            press="onPostDocument"
-                            class="sapUiSmallMarginBegin"
-                            visible="{/appState/isRecipientEditable}"/>
-                    
-                    <Button text="Submit to Approve"
-                            type="Emphasized"
-                            icon="sap-icon://workflow-tasks"
-                            press="onSubmitToApprove"
-                            class="sapUiSmallMarginBegin"
-                            visible="{/appState/isRecipientEditable}"/>
-                </OverflowToolbar>
-            </uxap:footer>
+                            <Button
+                                text="Go"
+                                type="Emphasized"
+                                icon="sap-icon://search"
+                                press="onGoSearch"
+                                class="sapUiSmallMarginEnd"/>
 
-        </uxap:ObjectPageLayout>
+                            <!-- <Button
+                                text="Adapt Filters"
+                                type="Transparent"
+                                icon="sap-icon://filter"
+                                press="onAdaptFilters"/> -->
+
+                        </HBox>
+
+                    </HBox>
+
+
+                  <!-- ================================================= -->
+<!-- FILTER FIELDS                                    -->
+<!-- ================================================= -->
+
+<layout:Grid
+    defaultSpan="XL4 L4 M6 S12"
+    hSpacing="1"
+    vSpacing="1">
+
+    <!-- Initiator Company Code -->
+    <VBox>
+        <Label text="Initiator Company Code"/>
+        <Input
+            value="{/search/inCompanyCode}"
+            placeholder="Initiator Company Code"/>
+    </VBox>
+
+    <!-- Recipient Company Code -->
+    <VBox>
+        <Label text="Recipient Company Code"/>
+        <Input
+            value="{/search/recCompanyCode}"
+            placeholder="Recipient Company Code"/>
+    </VBox>
+
+    <!-- Temporary Accounting Document -->
+    <VBox>
+        <Label text="Accounting Document (Temp)"/>
+        <Input
+            value="{/search/accountingDocumentTemp}"
+            placeholder="Accounting Document"/>
+    </VBox>
+
+    <!-- Initiator Accounting Document -->
+    <VBox>
+        <Label text="Initiator Accounting Document"/>
+        <Input
+            value="{/search/inAccountingDocument}"
+            placeholder="Initiator Accounting Document"/>
+    </VBox>
+
+    <!-- Recipient Accounting Document -->
+    <VBox>
+        <Label text="Recipient Accounting Document"/>
+        <Input
+            value="{/search/recAccountingDocument}"
+            placeholder="Recipient Accounting Document"/>
+    </VBox>
+
+</layout:Grid>
+</VBox>
+                <!-- ===================================================== -->
+                <!-- RESULTS TABLE                                        -->
+                <!-- ===================================================== -->
+
+              <Panel
+    id="journalEntriesPanel"
+    expandable="false"
+    expanded="true"
+    class="sapUiSmallMarginTop">
+
+    <table:Table
+        id="journalEntriesTable"
+        width="100%"
+        rows="{/searchResults}"
+        selectionMode="None"
+        visibleRowCountMode="Auto"
+        minAutoRowCount="8"
+        enableColumnReordering="true"
+        alternateRowColors="true"
+        class="sapUiSizeCompact">
+
+        <!-- TABLE HEADER -->
+        <table:extension>
+            <OverflowToolbar>
+                <Title
+                    text="Entries"
+                    level="H3" />
+
+                <Text
+                    text="({/searchResultCount})"
+                    class="sapUiTinyMarginBegin" />
+
+                <ToolbarSpacer />
+
+                <Button
+                    text="Create"
+                    icon="sap-icon://add"
+                    type="Transparent"
+                    press=".onCreateNewIC" />
+            </OverflowToolbar>
+        </table:extension>
+
+        <!-- COLUMNS -->
+        <table:columns>
+
+            <!-- Accounting Document Temp -->
+            <table:Column width="12rem">
+                <Label text="Accounting Document (Temp)" />
+
+                <table:template>
+                    <Link
+                        text="{accountingdocument_temp}"
+                        press=".onOpenEntry" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Initiator Company Code -->
+            <table:Column width="11rem">
+                <Label text="Initiator Company Code" />
+
+                <table:template>
+                    <Text
+                        text="{in_companycode}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Recipient Company Code -->
+            <table:Column width="11rem">
+                <Label text="Recipient Company Code" />
+
+                <table:template>
+                    <Text
+                        text="{rec_companycode}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Initiator Accounting Document -->
+            <table:Column width="13rem">
+                <Label text="Initiator Accounting Document" />
+
+                <table:template>
+                    <Text
+                        text="{in_accountingdocument}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Recipient Accounting Document -->
+            <table:Column width="13rem">
+                <Label text="Recipient Accounting Document" />
+
+                <table:template>
+                    <Text
+                        text="{rec_accountingdocument}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Document Reference -->
+            <table:Column width="11rem">
+                <Label text="Document Reference" />
+
+                <table:template>
+                    <Text
+                        text="{documentreferenceid}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Document Date -->
+            <table:Column width="10rem">
+                <Label text="Document Date" />
+
+                <table:template>
+                    <Text
+                        text="{documentdate}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Posting Date -->
+            <table:Column width="10rem">
+                <Label text="Posting Date" />
+
+                <table:template>
+                    <Text
+                        text="{postingdate}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Amount -->
+            <table:Column
+                width="10rem"
+                hAlign="End">
+
+                <Label text="Amount" />
+
+                <table:template>
+                    <ObjectNumber
+                        number="{amount}"
+                        emphasized="true" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Currency -->
+            <table:Column width="8rem">
+                <Label text="Currency" />
+
+                <table:template>
+                    <Text
+                        text="{currencycode}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+
+            <!-- Created By -->
+            <table:Column width="12rem">
+                <Label text="Created By" />
+
+                <table:template>
+                    <Text
+                        text="{createdbyuser}"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+
+        </table:columns>
+
+
+        <!-- NO DATA -->
+        <table:noData>
+            <IllustratedMessage
+                illustrationType="sapIllus-NoData"
+                title="No Journal Entries"
+                description="No journal entries match the selected filters." />
+        </table:noData>
+
+    </table:Table>
+
+</Panel>
+
+            </content>
+
+        </Page>
+
+
+        <!-- ========================================================= -->
+        <!-- EXISTING IC FORM                                          -->
+        <!-- ========================================================= -->
+
+        <Page
+            id="icFormPage"
+            showHeader="false"
+            enableScrolling="false">
+
+            <content>
+
+                <uxap:ObjectPageLayout
+                    id="mainPage"
+                    busy="{/appState/isBusy}"
+                    showFooter="{= ${/appState/isHeaderEditable} || ${/appState/isRecipientEditable}}"
+                    alwaysShowContentHeader="false"
+                    upperCaseAnchorBar="false"
+                    enableLazyLoading="false"
+                    backgroundDesignAnchorBar="Solid">
+
+                    <uxap:headerTitle>
+                        <core:Fragment
+                            fragmentName="ZFI_INTERCO.fragment.OPHeaderTitle"
+                            type="XML"/>
+                    </uxap:headerTitle>
+
+                    <uxap:headerContent>
+                        <core:Fragment
+                            fragmentName="ZFI_INTERCO.fragment.OPHeaderContent"
+                            type="XML"/>
+                    </uxap:headerContent>
+
+                    <uxap:sections>
+
+                        <!-- 1. DOCUMENT TYPE SECTION -->
+                        <core:Fragment
+                            fragmentName="ZFI_INTERCO.fragment.SectionHeaderData"
+                            type="XML"/>
+
+                        <!-- ADDITIONAL FINANCIAL & WORKFLOW SECTIONS -->
+                        <core:Fragment
+                            fragmentName="ZFI_INTERCO.fragment.SectionInitiatorGL"
+                            type="XML"/>
+
+                        <core:Fragment
+                            fragmentName="ZFI_INTERCO.fragment.SectionRecipientGL"
+                            type="XML"/>
+
+                        <core:Fragment
+                            fragmentName="ZFI_INTERCO.fragment.SectionAttachments"
+                            type="XML"/>
+
+                        <core:Fragment
+                            fragmentName="ZFI_INTERCO.fragment.SectionWorkflow"
+                            type="XML"/>
+
+                    </uxap:sections>
+
+
+                    <uxap:footer>
+
+                        <OverflowToolbar>
+
+                            <!-- Phase 1: Initiator editing -->
+                            <Button
+                                text="Delete Draft"
+                                type="Negative"
+                                icon="sap-icon://delete"
+                                press="onDeleteDraft"
+                                visible="{/appState/isHeaderEditable}"/>
+
+                            <ToolbarSpacer/>
+
+                            <Button
+                                text="Cancel"
+                                icon="sap-icon://cancel"
+                                press="onCancel"
+                                visible="{/appState/isHeaderEditable}"/>
+
+                            <Button
+                                text="Save as Draft (F5)"
+                                icon="sap-icon://save"
+                                press="onSaveDraft"
+                                class="sapUiSmallMarginBegin"
+                                visible="{/appState/isHeaderEditable}"/>
+
+                            <Button
+                                text="Submit to Recipient"
+                                type="Emphasized"
+                                icon="sap-icon://outbox"
+                                press="onSubmitToRecipient"
+                                class="sapUiSmallMarginBegin"
+                                visible="{/appState/isHeaderEditable}"/>
+
+
+                            <!-- Phase 2: Recipient editing -->
+                            <Button
+                                text="Post"
+                                type="Accept"
+                                icon="sap-icon://accept"
+                                press="onPostDocument"
+                                class="sapUiSmallMarginBegin"
+                                visible="{/appState/isRecipientEditable}"/>
+
+                            <Button
+                                text="Submit to Approve"
+                                type="Emphasized"
+                                icon="sap-icon://workflow-tasks"
+                                press="onSubmitToApprove"
+                                class="sapUiSmallMarginBegin"
+                                visible="{/appState/isRecipientEditable}"/>
+
+                        </OverflowToolbar>
+
+                    </uxap:footer>
+
+                </uxap:ObjectPageLayout>
+
+            </content>
+
+        </Page>
+
     </App>
+
 </mvc:View>

@@ -65,7 +65,7 @@ sap.ui.define([], function () {
             }
             var sRoot = "/sap/opu/odata4/sap/zsb_interco_app/srvd/sap/zsd_interco_app/0001/";
             var sFilter = "CompanyCode eq '" + sCompanyCode + "'";
-         var sUrl = sRoot + "I_GLAccountInCompanyCode" + "?$filter=" + encodeURIComponent(sFilter) +
+         var sUrl = sRoot + "ZIGL_DETAILS" + "?$filter=" + encodeURIComponent(sFilter) +
         "&$select=GLAccount,GLAccountName,CompanyCode" +
         "&$orderby=GLAccount";
           return new Promise(function (resolve, reject) {
@@ -85,9 +85,9 @@ sap.ui.define([], function () {
 
                 resolve(aResults.map(function (oItem) {
                     return {
-                        glAccount: oItem.GLAccount,
-                        description: oItem.GLAccountName,
-                        companyCode: oItem.CompanyCode
+                     GLAccount: oItem.GLAccount,
+                     GLAccountName: oItem.GLAccountName,
+                     CompanyCode: oItem.CompanyCode
                     };
                 }));
 
@@ -106,6 +106,154 @@ sap.ui.define([], function () {
         });
 
     });  },
+
+
+    getProfitCenters: function (sCompanyCode) {
+
+    if (!sCompanyCode) {
+        return Promise.resolve([]);
+    }
+
+    var sRoot =
+        "/sap/opu/odata4/sap/zsb_interco_app/srvd/sap/zsd_interco_app/0001/";
+
+    var sFilter = "CompanyCode eq '" + sCompanyCode + "'";
+
+    var sUrl =
+        sRoot +
+        "I_ProfitCenter" +
+        "?$filter=" + encodeURIComponent(sFilter) +
+        "&$select=ProfitCenter,ProfitCenter_Text,CompanyCode,ControllingArea" +
+        "&$orderby=ProfitCenter";
+
+    return new Promise(function (resolve, reject) {
+
+        jQuery.ajax({
+            url: sUrl,
+            method: "GET",
+
+            headers: {
+                "Accept": "application/json",
+                "OData-Version": "4.0",
+                "OData-MaxVersion": "4.0"
+            },
+
+            success: function (oData) {
+
+                var aResults = (oData && oData.value) || [];
+
+                resolve(aResults.map(function (oItem) {
+
+                    return {
+                        profitCenter: oItem.ProfitCenter,
+                        description: oItem.ProfitCenter_Text,
+                        companyCode: oItem.CompanyCode,
+                        controllingArea: oItem.ControllingArea
+                    };
+
+                }));
+
+            },
+
+            error: function (oXHR, sStatus, sError) {
+
+                reject(new Error(
+                    "Failed to load Profit Centers for Company Code " +
+                    sCompanyCode +
+                    " [" +
+                    oXHR.status +
+                    "] " +
+                    sError
+                ));
+
+            }
+        });
+
+    });
+},
+
+
+getCostCenters: function (sCompanyCode) {
+
+    if (!sCompanyCode) {
+        return Promise.resolve([]);
+    }
+
+    var sRoot =
+        "/sap/opu/odata4/sap/zsb_interco_app/srvd/sap/zsd_interco_app/0001/";
+
+    var sFilter = "CompanyCode eq '" + sCompanyCode + "'";
+
+    var sUrl =
+        sRoot +
+        "I_CostCenter" +
+        "?$filter=" + encodeURIComponent(sFilter) +
+        "&$select=CostCenter,CostCenter_Text,CompanyCode,ControllingArea,ProfitCenter" +
+        "&$orderby=CostCenter";
+
+    console.log("[CostCenter] Request URL:", sUrl);
+
+    return new Promise(function (resolve, reject) {
+
+        jQuery.ajax({
+            url: sUrl,
+            method: "GET",
+
+            headers: {
+                "Accept": "application/json",
+                "OData-Version": "4.0",
+                "OData-MaxVersion": "4.0"
+            },
+
+            success: function (oData) {
+
+                var aResults = (oData && oData.value) || [];
+
+                console.log(
+                    "[CostCenter] Company Code:",
+                    sCompanyCode,
+                    "Results:",
+                    aResults
+                );
+
+                resolve(aResults.map(function (oItem) {
+
+                    return {
+                        CostCenter: oItem.CostCenter,
+                        CostCenter_Text: oItem.CostCenter_Text,
+                        CompanyCode: oItem.CompanyCode,
+                        ControllingArea: oItem.ControllingArea,
+                        ProfitCenter: oItem.ProfitCenter
+                    };
+
+                }));
+
+            },
+
+            error: function (oXHR, sStatus, sError) {
+
+                console.error(
+                    "[CostCenter] Failed for Company Code:",
+                    sCompanyCode,
+                    oXHR.status,
+                    sError,
+                    oXHR.responseText
+                );
+
+                reject(new Error(
+                    "Failed to load Cost Centers for Company Code " +
+                    sCompanyCode +
+                    " [" +
+                    oXHR.status +
+                    "] " +
+                    sError
+                ));
+
+            }
+        });
+
+    });
+},
 
         /**
          * Returns all tax codes with their rates.
@@ -528,7 +676,7 @@ sap.ui.define([], function () {
                     profitcenter:                (oLine.profitCenter    || "").slice(0, 10),
                     taxcode:                     (oLine.taxCode    || "").slice(0, 2),
                     tax_amount:                  parseFloat(oLine.taxAmount) || 0,
-                    // costcenter:                  (oLine.costCenter      || "").slice(0, 10),
+                    costcenter:                  (oLine.costCenter      || "").slice(0, 10),
                     // internalorder:               (oLine.internalOrder   || "").slice(0, 12),
                     // wbselement:                  (oLine.wbsElement      || "").slice(0, 24),
                     // tradingpartner:              (oLine.tradingPartner  || "").slice(0, 6),
@@ -759,7 +907,9 @@ console.log("Doc ID =", sDocId);
                     debitcreditcode:             oLine.debitCredit || "S",
                     profitcenter:                sanitize(oLine.profitCenter,    10),
                     taxcode:                     sanitize(oLine.taxCode,          2),
-                    tax_amount:                  parseFloat(oLine.taxAmount) || 0
+                    tax_amount:                  parseFloat(oLine.taxAmount) || 0,
+                 
+                    costcenter:   sanitize(oLine.costCenter, 10),
                 };
             });
 

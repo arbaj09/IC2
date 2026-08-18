@@ -1,19 +1,18 @@
 {
   "welcomeFile": "/index.html",
-  "authenticationMethod": "route",
+  "authenticationMethod": "none",
   "routes": [
     {
       "source": "^/sap/(.*)$",
       "target": "/$1",
       "destination": "IC_APP_DEST",
-      "authenticationType": "xsuaa",
+      "authenticationType": "none",
       "csrfProtection": false
     },
-    {
+  {
       "source": "^(.*)$",
-      "target": "$1",
-      "service": "html5-apps-repo-rt",
-      "authenticationType": "xsuaa"
+      "localDir": "../webapp"
     }
+
   ]
 }

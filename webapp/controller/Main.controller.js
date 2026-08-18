@@ -31,6 +31,8 @@ sap.ui.define([
             this._pDocTypeDialog = null;
             this._pBPDialog = null;
             this._initModel();
+             // Load real Journal Entries for initial search screen
+            this._loadJournalEntries();
             this._loadReferenceData();
         },
 
@@ -150,6 +152,125 @@ sap.ui.define([
                     // ]
                 },
 
+        //     Getting data 
+    _loadJournalEntries: function (oFilters) {
+    var oModel = this.getView().getModel();
+    var that = this;
+
+    var sUrl =
+        "/sap/opu/odata4/sap/zsb_interco_app/srvd/sap/zsd_interco_app/0001/" +
+        "ZC_INTERCO_JE_HEADER";
+
+    var aParams = [];
+
+    aParams.push(
+        "$select=" +
+        [
+            "accountingdocument_temp",
+            "in_companycode",
+            "rec_companycode",
+            "in_accountingdocument",
+            "rec_accountingdocument",
+            "documentreferenceid",
+            "documentdate",
+            "postingdate",
+            "amount",
+            "currencycode",
+            "createdbyuser"
+        ].join(",")
+    );
+
+    if (oFilters) {
+        var aFilterParts = [];
+
+        if (oFilters.in_companycode) {
+            aFilterParts.push(
+                "in_companycode eq '" +
+                encodeURIComponent(oFilters.in_companycode).replace(/%20/g, " ") +
+                "'"
+            );
+        }
+
+        if (oFilters.rec_companycode) {
+            aFilterParts.push(
+                "rec_companycode eq '" +
+                encodeURIComponent(oFilters.rec_companycode).replace(/%20/g, " ") +
+                "'"
+            );
+        }
+
+        if (oFilters.accountingdocument_temp) {
+            aFilterParts.push(
+                "accountingdocument_temp eq '" +
+                encodeURIComponent(oFilters.accountingdocument_temp).replace(/%20/g, " ") +
+                "'"
+            );
+        }
+
+        if (oFilters.in_accountingdocument) {
+            aFilterParts.push(
+                "in_accountingdocument eq '" +
+                encodeURIComponent(oFilters.in_accountingdocument).replace(/%20/g, " ") +
+                "'"
+            );
+        }
+
+        if (oFilters.rec_accountingdocument) {
+            aFilterParts.push(
+                "rec_accountingdocument eq '" +
+                encodeURIComponent(oFilters.rec_accountingdocument).replace(/%20/g, " ") +
+                "'"
+            );
+        }
+
+        if (aFilterParts.length > 0) {
+            aParams.push("$filter=" + aFilterParts.join(" and "));
+        }
+    }
+
+    var sRequestUrl = sUrl + "?" + aParams.join("&");
+
+    fetch(sRequestUrl, {
+        method: "GET",
+        headers: {
+            "Accept": "application/json"
+        }
+    })
+    .then(function (oResponse) {
+        if (!oResponse.ok) {
+            throw new Error(
+                "HTTP " + oResponse.status + " - " + oResponse.statusText
+            );
+        }
+
+        return oResponse.json();
+    })
+    .then(function (oData) {
+
+        var aResults = oData.value || [];
+
+        console.log("Journal Entries API response:", oData);
+        console.log("Journal Entries:", aResults);
+
+        oModel.setProperty("/allSearchResults", aResults);
+        oModel.setProperty("/searchResults", aResults);
+        oModel.setProperty("/searchResultCount", aResults.length);
+
+    })
+    .catch(function (oError) {
+
+        console.error("Error loading Journal Entries:", oError);
+
+        oModel.setProperty("/allSearchResults", []);
+        oModel.setProperty("/searchResults", []);
+        oModel.setProperty("/searchResultCount", 0);
+
+        sap.m.MessageToast.show(
+            "Unable to load Journal Entries."
+        );
+    });
+},
+
                 initiatorLines: [
                     {
                         rowNum: 1,
@@ -249,7 +370,10 @@ sap.ui.define([
                     initiatorTaxCodes: [],
                     recipientTaxCodes: [],
                     closedPeriods:     [],
-                    documentTypes:     []
+                    documentTypes:     [],
+                     glAccounts: [],
+                     profitCenters: [],
+                     costCenters: [],
                 }
             };
 
@@ -758,39 +882,494 @@ sap.ui.define([
             });
         },
 
-        // GL acount Initiator Value help
-      onInitiatorGLAccountVH: function (oEvent) {
+       // ─── GL Account Value Help — Initiator ─────────────────────────────────
+onInitiatorGLAccountVH: function (oEvent) {
 
     var oModel = this.getView().getModel();
-    
+    var oView = this.getView();
+    var that = this;
 
-    var sCompanyCode = oModel.getProperty("/headerData/initiatorCC");
+    var sCompanyCode =
+        (oModel.getProperty("/headerData/initiatorCC") || "").trim();
 
     if (!sCompanyCode) {
-        sap.m.MessageToast.show("Please select Initiator Company Code first.");
+        MessageToast.show("Please select Initiator Company Code first.");
         return;
     }
 
-    this._oGLInput = oEvent.getSource();
+    // Remember the exact GL line on which the value help was clicked.
+    // Example: /initiatorLines/1
+    var oInput = oEvent.getSource();
+    var oContext = oInput.getBindingContext();
 
-    this.setBusy(true);
+    if (!oContext) {
+        MessageToast.show("Unable to determine the selected GL line.");
+        return;
+    }
+
+    this._sGLAccountRowPath = oContext.getPath();
+
+    oModel.setProperty("/appState/isBusy", true);
 
     MasterDataService.getGLAccounts(sCompanyCode)
         .then(function (aGLAccounts) {
 
-            this.setBusy(false);
+            oModel.setProperty("/appState/isBusy", false);
 
-            console.log("GL Accounts");
-            console.log(aGLAccounts);
+            if (!aGLAccounts || !aGLAccounts.length) {
+                MessageToast.show(
+                    "No GL Accounts found for Company Code " + sCompanyCode + "."
+                );
+                return;
+            }
 
-        }.bind(this))
+            // Store the API result for the SelectDialog.
+            oModel.setProperty(
+                "/referenceData/glAccounts",
+                aGLAccounts
+            );
+
+            // Create dialog only once.
+            if (!that._pGLAccountDialog) {
+
+                that._pGLAccountDialog = Fragment.load({
+                    id: oView.getId() + "--glAccount",
+                    name: "ZFI_INTERCO.fragment.GLAccountValueHelp",
+                    controller: that
+                }).then(function (oDialog) {
+
+                    oView.addDependent(oDialog);
+
+                    return oDialog;
+                });
+            }
+
+            that._pGLAccountDialog.then(function (oDialog) {
+
+                // Clear any previous search filter.
+                var oBinding = oDialog.getBinding("items");
+
+                if (oBinding) {
+                    oBinding.filter([]);
+                }
+
+                oDialog.open();
+            });
+
+        })
         .catch(function (oError) {
 
-            this.setBusy(false);
+            oModel.setProperty("/appState/isBusy", false);
 
-            sap.m.MessageBox.error(oError.message);
+            MessageBox.error(
+                "Failed to load GL Accounts: " +
+                (oError && oError.message
+                    ? oError.message
+                    : String(oError))
+            );
+        });
+},
 
-        }.bind(this));
+// ─── GL Account Picklist ────────────────────────────────────────────────
+
+onGLAccountPicklistSearch: function (oEvent) {
+    var sQuery = oEvent.getParameter("value");
+    var oBinding = oEvent.getParameter("itemsBinding");
+
+    if (!oBinding) {
+        return;
+    }
+
+    if (!sQuery) {
+        oBinding.filter([]);
+        return;
+    }
+
+    oBinding.filter([
+        new Filter({
+            filters: [
+                new Filter("GLAccount", FilterOperator.Contains, sQuery),
+                new Filter("GLAccountName", FilterOperator.Contains, sQuery),
+                new Filter("CompanyCode", FilterOperator.Contains, sQuery)
+            ],
+            and: false
+        })
+    ]);
+},
+
+onGLAccountPicklistConfirm: function (oEvent) {
+    var oSelectedItem = oEvent.getParameter("selectedItem");
+
+    if (!oSelectedItem) {
+        return;
+    }
+
+    var oContext = oSelectedItem.getBindingContext();
+
+    if (!oContext) {
+        MessageToast.show("Unable to determine the selected GL Account.");
+        return;
+    }
+
+    var oGLAccount = oContext.getObject();
+
+    var sGLAccount = oGLAccount.GLAccount || "";
+
+    if (!sGLAccount) {
+        MessageToast.show("Selected GL Account is empty.");
+        return;
+    }
+
+    var oModel = this.getView().getModel();
+
+    // Use the exact GL row from which the value help was opened.
+    var sRowPath = this._sGLAccountRowPath;
+
+    if (!sRowPath) {
+        MessageToast.show("Unable to determine the GL coding line.");
+        return;
+    }
+
+    // Set selected GL Account into that exact row.
+    oModel.setProperty(sRowPath + "/glAccount", sGLAccount);
+
+    // Refresh balance/validation after the GL Account change.
+    this._recalculateBalance();
+
+    // Clear stored row path after successful selection.
+    this._sGLAccountRowPath = "";
+
+    MessageToast.show("GL Account " + sGLAccount + " selected.");
+},
+
+onGLAccountPicklistCancel: function () {
+    // SelectDialog closes automatically.
+    this._sGLAccountRowPath = "";
+},
+
+
+// ─── Profit Center Value Help — Initiator ────────────────────────────────
+
+onInitiatorProfitCenterValueHelp: function (oEvent) {
+
+    var oModel = this.getView().getModel();
+    var oView = this.getView();
+    var that = this;
+
+    // Get Initiator Company Code
+    var sCompanyCode =
+        (oModel.getProperty("/headerData/initiatorCC") || "").trim();
+
+    if (!sCompanyCode) {
+        MessageToast.show(
+            "Please select Initiator Company Code first."
+        );
+        return;
+    }
+
+    // Remember the exact Initiator GL line
+    // Example: /initiatorLines/1
+    var oInput = oEvent.getSource();
+    var oContext = oInput.getBindingContext();
+
+    if (!oContext) {
+        MessageToast.show(
+            "Unable to determine the selected Profit Center line."
+        );
+        return;
+    }
+
+    this._sProfitCenterRowPath = oContext.getPath();
+
+    oModel.setProperty("/appState/isBusy", true);
+
+    // Fetch Profit Centers based on Initiator Company Code
+    MasterDataService.getProfitCenters(sCompanyCode)
+        .then(function (aProfitCenters) {
+
+            oModel.setProperty("/appState/isBusy", false);
+
+            if (!aProfitCenters || !aProfitCenters.length) {
+
+                MessageToast.show(
+                    "No Profit Centers found for Company Code " +
+                    sCompanyCode + "."
+                );
+
+                return;
+            }
+
+            // Store API result for SelectDialog
+            oModel.setProperty(
+                "/referenceData/profitCenters",
+                aProfitCenters
+            );
+
+            // Create dialog only once
+            if (!that._pProfitCenterDialog) {
+
+                that._pProfitCenterDialog = Fragment.load({
+                    id: oView.getId() + "--profitCenter",
+                    name: "ZFI_INTERCO.fragment.ProfitCenterPicklist",
+                    controller: that
+                }).then(function (oDialog) {
+
+                    oView.addDependent(oDialog);
+
+                    return oDialog;
+                });
+            }
+
+            that._pProfitCenterDialog.then(function (oDialog) {
+
+                // Clear previous search filter
+                var oBinding = oDialog.getBinding("items");
+
+                if (oBinding) {
+                    oBinding.filter([]);
+                }
+
+                oDialog.open();
+            });
+
+        })
+        .catch(function (oError) {
+
+            oModel.setProperty("/appState/isBusy", false);
+
+            MessageBox.error(
+                "Failed to load Profit Centers: " +
+                (oError && oError.message
+                    ? oError.message
+                    : String(oError))
+            );
+        });
+},
+onProfitCenterPicklistSearch: function (oEvent) {
+
+    var sQuery = oEvent.getParameter("value");
+    var oBinding = oEvent.getParameter("itemsBinding");
+
+    if (!oBinding) {
+        return;
+    }
+
+    if (!sQuery) {
+        oBinding.filter([]);
+        return;
+    }
+
+    oBinding.filter([
+        new Filter({
+            filters: [
+                new Filter(
+                    "profitCenter",
+                    FilterOperator.Contains,
+                    sQuery
+                ),
+                new Filter(
+                    "description",
+                    FilterOperator.Contains,
+                    sQuery
+                ),
+                new Filter(
+                    "companyCode",
+                    FilterOperator.Contains,
+                    sQuery
+                )
+            ],
+            and: false
+        })
+    ]);
+},
+onProfitCenterPicklistConfirm: function (oEvent) {
+
+    var oSelectedItem = oEvent.getParameter("selectedItem");
+
+    if (!oSelectedItem) {
+        return;
+    }
+
+    var oContext = oSelectedItem.getBindingContext();
+
+    if (!oContext) {
+        MessageToast.show(
+            "Unable to determine the selected Profit Center."
+        );
+        return;
+    }
+
+    var oProfitCenter = oContext.getObject();
+
+    var sProfitCenter =
+        oProfitCenter.profitCenter || "";
+
+    if (!sProfitCenter) {
+        MessageToast.show(
+            "Selected Profit Center is empty."
+        );
+        return;
+    }
+
+    var oModel = this.getView().getModel();
+
+    // Get the exact line from which the value help was opened
+    var sRowPath = this._sProfitCenterRowPath;
+
+    if (!sRowPath) {
+        MessageToast.show(
+            "Unable to determine the Initiator GL coding line."
+        );
+        return;
+    }
+
+    // Set selected Profit Center
+    oModel.setProperty(
+        sRowPath + "/profitCenter",
+        sProfitCenter
+    );
+
+    // Clear stored row path
+    this._sProfitCenterRowPath = "";
+
+    MessageToast.show(
+        "Profit Center " + sProfitCenter + " selected."
+    );
+},
+onProfitCenterPicklistCancel: function () {
+
+    this._sProfitCenterRowPath = "";
+
+},
+
+
+onInitiatorCostCenterVH: function (oEvent) {
+
+    this._oCostCenterInput = oEvent.getSource();
+
+    var oModel = this.getView().getModel();
+
+    var sCompanyCode =
+        (oModel.getProperty("/headerData/initiatorCC") || "")
+            .trim()
+            .toUpperCase();
+
+    if (!sCompanyCode) {
+        sap.m.MessageToast.show(
+            "Please select Initiator Company Code first."
+        );
+        return;
+    }
+
+    MasterDataService.getCostCenters(sCompanyCode)
+        .then(function (aCostCenters) {
+
+            oModel.setProperty(
+                "/referenceData/costCenters",
+                aCostCenters
+            );
+
+            if (!aCostCenters || !aCostCenters.length) {
+                sap.m.MessageToast.show(
+                    "No Cost Centers found for Company Code " +
+                    sCompanyCode + "."
+                );
+                return;
+            }
+
+            if (!this._oCostCenterDialog) {
+
+                this._oCostCenterDialog = sap.ui.xmlfragment(
+                    this.getView().getId(),
+                    "ZFI_INTERCO.fragment.CostCenterValueHelp",
+                    this
+                );
+
+                this.getView().addDependent(
+                    this._oCostCenterDialog
+                );
+            }
+
+            this._oCostCenterDialog.setModel(oModel);
+            this._oCostCenterDialog.open();
+
+        }.bind(this))
+
+        .catch(function (oError) {
+
+            console.error(
+                "[CostCenter VH] Error:",
+                oError
+            );
+
+            sap.m.MessageToast.show(
+                "Failed to load Cost Centers."
+            );
+
+        });
+},
+
+onCostCenterPicklistSearch: function (oEvent) {
+
+    var sValue = oEvent.getParameter("value");
+
+    var oFilter = new sap.ui.model.Filter({
+        filters: [
+            new sap.ui.model.Filter(
+                "CostCenter",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            ),
+            new sap.ui.model.Filter(
+                "CostCenter_Text",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            )
+        ],
+        and: false
+    });
+
+    oEvent.getSource().getBinding("items").filter(
+        sValue ? [oFilter] : []
+    );
+},
+onCostCenterPicklistConfirm: function (oEvent) {
+
+    var oSelectedItem = oEvent.getParameter("selectedItem");
+
+    if (!oSelectedItem || !this._oCostCenterInput) {
+        return;
+    }
+
+    var oContext = oSelectedItem.getBindingContext();
+
+    if (!oContext) {
+        return;
+    }
+
+    var oCostCenter = oContext.getObject();
+
+    this._oCostCenterInput.setValue(
+        oCostCenter.CostCenter
+    );
+
+    this._oCostCenterInput
+        .getBindingContext()
+        .getModel()
+        .setProperty(
+            this._oCostCenterInput
+                .getBindingContext()
+                .getPath() + "/costCenter",
+            oCostCenter.CostCenter
+        );
+
+    this._oCostCenterDialog.close();
+},
+onCostCenterPicklistCancel: function () {
+
+    if (this._oCostCenterDialog) {
+        this._oCostCenterDialog.close();
+    }
 
 },
 
@@ -1499,6 +2078,23 @@ sap.ui.define([
             }, 500);
         },
 
+   onCreateNewIC: function () {
+    var oApp = this.getView().byId("icAppRoot");
+    var oFormPage = this.getView().byId("icFormPage");
+
+    if (!oApp) {
+        sap.m.MessageBox.error("icAppRoot not found");
+        return;
+    }
+
+    if (!oFormPage) {
+        sap.m.MessageBox.error("icFormPage not found");
+        return;
+    }
+
+    oApp.to(oFormPage.getId());
+},
+
         // ─────────────────────────────────────────────────────────────────────
         // Action Handlers (Save, Submit, Reset)
         // ─────────────────────────────────────────────────────────────────────
@@ -1619,6 +2215,11 @@ sap.ui.define([
 
         onCancel: function () {
             var that = this;
+            var oApp = this.getView().byId("icAppRoot");
+
+    if (oApp) {
+        oApp.back();
+    }
             MessageBox.warning("Discard changes and return to display mode?", {
                 actions: [MessageBox.Action.YES, MessageBox.Action.NO],
                 onClose: function (sAction) {
