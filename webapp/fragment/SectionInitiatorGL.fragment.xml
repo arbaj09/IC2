@@ -97,6 +97,7 @@
                                     class="sapUiSmallMarginBegin"/>
                             <ToolbarSeparator/>
                             <Button text="Download Template" icon="sap-icon://download" type="Ghost"
+                                    press="onDownloadInitiatorTemplate"
                                     tooltip="Download GL offset line template (BP clearing line excluded)"/>
                             <ToolbarSpacer/>
                             <Text text="{= 'Lines: ' + ${/initiatorLines}.length + ' (incl. BP clearing)'}"/>
@@ -202,6 +203,7 @@
                                 <t:Column width="120px">
                                     <t:label><Label text="WBS Element"/></t:label>
                                     <t:template>
+                                    
                                         <Input value="{wbsElement}" enabled="{= ${/appState/isHeaderEditable} &amp;&amp; !${isSystemLine}}"
                                                placeholder="—" width="110px"/>
                                     </t:template>

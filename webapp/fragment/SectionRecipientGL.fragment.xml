@@ -95,6 +95,7 @@
                                     class="sapUiSmallMarginBegin"/>
                             <ToolbarSeparator/>
                             <Button text="Download Template" icon="sap-icon://download" type="Ghost"
+                                    press="onDownloadRecipientTemplate"
                                     tooltip="Download GL offset line template (BP clearing line excluded)"/>
                             <ToolbarSpacer/>
                             <Text text="{= 'Lines: ' + ${/recipientLines}.length + ' (incl. BP clearing)'}"/>
@@ -148,8 +149,13 @@
                                 <t:Column width="130px">
                                     <t:label><Label text="GL Account *"/></t:label>
                                     <t:template>
-                                        <Input value="{glAccount}" enabled="{= ${/appState/isRecipientEditable} &amp;&amp; !${isSystemLine}}"
-                                               placeholder="GL Acct" change="onRecipientGLLineChange" width="120px"/>
+                                        <Input value="{glAccount}" 
+                                                enabled="{= ${/appState/isRecipientEditable} &amp;&amp; !${isSystemLine}}"
+                                               placeholder="GL Acct" 
+                                               change="onRecipientGLLineChange" width="120px"
+                                               valueHelpRequest="onRecipientGLAccountVH"
+                                               showValueHelp="true"                                               
+                                               />
                                     </t:template>
                                 </t:Column>
 
@@ -201,7 +207,9 @@
                                     <t:label><Label text="Cost Center"/></t:label>
                                     <t:template>
                                         <Input value="{costCenter}" enabled="{= ${/appState/isRecipientEditable} &amp;&amp; !${isSystemLine}}"
-                                               placeholder="—" width="100px"/>
+                                               placeholder="—" width="100px"
+                                                showValueHelp="true"
+                                                valueHelpRequest="onRecipientCostCenterVH"/>
                                     </t:template>
                                 </t:Column>
 
@@ -209,7 +217,9 @@
                                     <t:label><Label text="Profit Center"/></t:label>
                                     <t:template>
                                         <Input value="{profitCenter}" enabled="{= ${/appState/isRecipientEditable} &amp;&amp; !${isSystemLine}}"
-                                               placeholder="—" width="100px"/>
+                                               placeholder="—" width="100px"
+                                               showValueHelp="true"
+                                                 valueHelpRequest="onRecipientProfitCenterValueHelp"/>
                                     </t:template>
                                 </t:Column>
 

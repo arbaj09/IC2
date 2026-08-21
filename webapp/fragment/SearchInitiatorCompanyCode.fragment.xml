@@ -1,0 +1,71 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Dialog
+        id="searchInitiatorCCDialog"
+        title="Select Initiator Company Code"
+        contentWidth="44rem"
+        contentHeight="28rem"
+        draggable="true"
+        resizable="true"
+        stretch="{device>/system/phone}">
+
+        <subHeader>
+            <Toolbar>
+                <SearchField
+                    id="searchInitiatorCCSearchField"
+                    width="100%"
+                    placeholder="Search by document, company code..."
+                    search=".onSearchInitiatorCCFilter"
+                    liveChange=".onSearchInitiatorCCFilter"/>
+            </Toolbar>
+        </subHeader>
+
+        <content>
+            <Table
+                id="searchInitiatorCCTable"
+                noDataText="No records found."
+                growing="true"
+                growingThreshold="50"
+                items="{
+                    path: '/referenceData/initiatorCCVHData',
+                    templateShareable: false
+                }">
+
+                <columns>
+                    <Column width="35%">
+                        <Text text="Accounting Document Temp"/>
+                    </Column>
+                    <Column width="30%">
+                        <Text text="Initiator Company Code"/>
+                    </Column>
+                    <Column width="35%">
+                        <Text text="Initiator Accounting Document"/>
+                    </Column>
+                </columns>
+
+                <items>
+                    <ColumnListItem
+                        type="Active"
+                        press=".onSearchInitiatorCCSelect">
+                        <cells>
+                            <Text text="{accountingdocument_temp}"/>
+                            <Text text="{in_companycode}"/>
+                            <Text text="{in_accountingdocument}"/>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+
+            </Table>
+        </content>
+
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onSearchInitiatorCCCancel"/>
+        </endButton>
+
+    </Dialog>
+
+</core:FragmentDefinition>

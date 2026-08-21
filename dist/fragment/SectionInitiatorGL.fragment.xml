@@ -97,6 +97,7 @@
                                     class="sapUiSmallMarginBegin"/>
                             <ToolbarSeparator/>
                             <Button text="Download Template" icon="sap-icon://download" type="Ghost"
+                                    press="onDownloadInitiatorTemplate"
                                     tooltip="Download GL offset line template (BP clearing line excluded)"/>
                             <ToolbarSpacer/>
                             <Text text="{= 'Lines: ' + ${/initiatorLines}.length + ' (incl. BP clearing)'}"/>
@@ -153,6 +154,8 @@
                                         <Input 
                                         value="{glAccount}" enabled="{= ${/appState/isHeaderEditable} &amp;&amp; !${isSystemLine}}"
                                          placeholder="GL Acct" change="onGLLineChange" width="120px"
+                                         valueHelpRequest ="onInitiatorGLAccountVH"
+                                         showValueHelp='true'
                                        
                                      />
                                     </t:template>
@@ -209,7 +212,9 @@
                                     <t:label><Label text="Cost Center"/></t:label>
                                     <t:template>
                                         <Input value="{costCenter}" enabled="{= ${/appState/isHeaderEditable} &amp;&amp; !${isSystemLine}}"
-                                               placeholder="—" width="100px"/>
+                                               placeholder="—" width="100px"
+                                               showValueHelp="true"
+                                               valueHelpRequest="onInitiatorCostCenterVH"/>
                                     </t:template>
                                 </t:Column>
 
@@ -217,7 +222,9 @@
                                     <t:label><Label text="Profit Center"/></t:label>
                                     <t:template>
                                         <Input value="{profitCenter}" enabled="{= ${/appState/isHeaderEditable} &amp;&amp; !${isSystemLine}}"
-                                               placeholder="—" width="100px"/>
+                                               placeholder="—" width="100px"
+                                               valueHelpRequest ="onInitiatorProfitCenterValueHelp"
+                                               showValueHelp='true'/>
                                     </t:template>
                                 </t:Column>
 

@@ -1,17 +1,19 @@
 {
-  "welcomeFile": "/index.html",
-  "authenticationMethod": "none",
+  "welcomeFile": "/ZFI_INTERCO/index.html",
+  "authenticationMethod": "route",
   "routes": [
     {
       "source": "^/sap/(.*)$",
       "target": "/$1",
       "destination": "IC_APP_DEST",
-      "authenticationType": "none",
+      "authenticationType": "xsuaa",
       "csrfProtection": false
     },
- {
+  {
       "source": "^(.*)$",
-      "localDir": "../webapp"
+      "target": "$1",
+      "service": "html5-apps-repo-rt",
+      "authenticationType": "xsuaa"
     }
 
   ]

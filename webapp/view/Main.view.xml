@@ -47,7 +47,7 @@
                             <Button
                                 text="Go"
                                 type="Emphasized"
-                                icon="sap-icon://search"
+                              
                                 press="onGoSearch"
                                 class="sapUiSmallMarginEnd"/>
 
@@ -74,42 +74,54 @@
     <!-- Initiator Company Code -->
     <VBox>
         <Label text="Initiator Company Code"/>
-        <Input
-            value="{/search/inCompanyCode}"
-            placeholder="Initiator Company Code"/>
+      <Input id="searchInitiatorCompanyCode"
+        width="100%"
+        value="{/search/in_companycode}"
+        placeholder="Initiator Company Code"
+        showValueHelp="true"
+        valueHelpRequest=".onSearchInitiatorCCValueHelp"
+        showSuggestion="false"/>
     </VBox>
 
     <!-- Recipient Company Code -->
     <VBox>
         <Label text="Recipient Company Code"/>
-        <Input
-            value="{/search/recCompanyCode}"
-            placeholder="Recipient Company Code"/>
+       <Input
+
+
+        id="searchRecipientCompanyCode"
+        width="100%"
+        value="{/search/rec_companycode}"
+        placeholder="Recipient Company Code"
+        showValueHelp="true"
+        valueHelpRequest=".onSearchRecipientCCValueHelp"
+        showSuggestion="false"
+       />
     </VBox>
 
     <!-- Temporary Accounting Document -->
-    <VBox>
+    <!-- <VBox>
         <Label text="Accounting Document (Temp)"/>
         <Input
             value="{/search/accountingDocumentTemp}"
             placeholder="Accounting Document"/>
-    </VBox>
+    </VBox> -->
 
     <!-- Initiator Accounting Document -->
-    <VBox>
+    <!-- <VBox>
         <Label text="Initiator Accounting Document"/>
         <Input
             value="{/search/inAccountingDocument}"
             placeholder="Initiator Accounting Document"/>
-    </VBox>
+    </VBox> -->
 
     <!-- Recipient Accounting Document -->
-    <VBox>
+    <!-- <VBox>
         <Label text="Recipient Accounting Document"/>
         <Input
             value="{/search/recAccountingDocument}"
             placeholder="Recipient Accounting Document"/>
-    </VBox>
+    </VBox> -->
 
 </layout:Grid>
 </VBox>

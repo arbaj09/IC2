@@ -17,5 +17,8 @@
     "dependencies": [
       "ui5-middleware-simpleproxy"
     ]
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
   }
 }

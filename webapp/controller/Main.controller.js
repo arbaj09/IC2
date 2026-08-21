@@ -9,8 +9,10 @@ sap.ui.define([
     "sap/ui/model/FilterOperator",
     "sap/m/MessageBox",
     "sap/m/MessageToast",
-    "sap/ui/core/Fragment"
-], function (BaseController, MasterDataService, Constants, Helper, Formatter, JSONModel, Filter, FilterOperator, MessageBox, MessageToast, Fragment) {
+    "sap/ui/core/Fragment",
+    "ZFI_INTERCO/util/InitiatorGLTemplate",
+    "ZFI_INTERCO/util/RecipientGLTemplate"
+], function (BaseController, MasterDataService, Constants, Helper, Formatter, JSONModel, Filter, FilterOperator, MessageBox, MessageToast, Fragment, InitiatorGLTemplate, RecipientGLTemplate) {
     "use strict";
 
     // ─── GL row counter ────────────────────────────────────────────────────────
@@ -31,10 +33,145 @@ sap.ui.define([
             this._pDocTypeDialog = null;
             this._pBPDialog = null;
             this._initModel();
-             // Load real Journal Entries for initial search screen
-            this._loadJournalEntries();
             this._loadReferenceData();
+            // Load all IC records on startup
+           this._loadJournalEntries();
         },
+
+
+        _fetchAllPages: function (sInitialUrl) {
+            var sServiceRoot =
+                "/sap/opu/odata4/sap/zsb_interco_app/srvd/sap/zsd_interco_app/0001/";
+            var aAllResults = [];
+
+            function fetchPage(sUrl) {
+                return fetch(sUrl, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                })
+                .then(function (oResponse) {
+                    if (!oResponse.ok) {
+                        throw new Error(
+                            "HTTP " + oResponse.status + " " + oResponse.statusText
+                        );
+                    }
+                    return oResponse.json();
+                })
+                .then(function (oData) {
+                    aAllResults = aAllResults.concat(oData.value || []);
+                    var sNextLink = oData["@odata.nextLink"];
+                    if (sNextLink) {
+                        var sNextUrl =
+                            (sNextLink.indexOf("http") === 0 || sNextLink.indexOf("/") === 0)
+                                ? sNextLink
+                                : sServiceRoot + sNextLink;
+                        return fetchPage(sNextUrl);
+                    }
+                    return aAllResults;
+                });
+            }
+
+            return fetchPage(sInitialUrl);
+        },
+
+    _loadJournalEntries: function (oFilters) {
+
+    var oModel = this.getView().getModel();
+
+    var sUrl =
+        "/sap/opu/odata4/sap/zsb_interco_app/srvd/sap/zsd_interco_app/0001/" +
+        "ZC_INTERCO_JE_HEADER";
+
+    var aParams = [];
+
+    aParams.push(
+        "$select=" +
+        [
+            "accountingdocument_temp",
+            "in_companycode",
+            "rec_companycode",
+            "in_accountingdocument",
+            "rec_accountingdocument",
+            "documentreferenceid",
+            "documentdate",
+            "postingdate",
+            "amount",
+            "currencycode",
+            "createdbyuser"
+        ].join(",")
+    );
+
+    if (oFilters) {
+
+        var aFilterParts = [];
+
+        if (oFilters.in_companycode) {
+            aFilterParts.push(
+                "in_companycode eq '" +
+                encodeURIComponent(oFilters.in_companycode).replace(/%20/g, " ") +
+                "'"
+            );
+        }
+
+        if (oFilters.rec_companycode) {
+            aFilterParts.push(
+                "rec_companycode eq '" +
+                encodeURIComponent(oFilters.rec_companycode).replace(/%20/g, " ") +
+                "'"
+            );
+        }
+
+        if (aFilterParts.length > 0) {
+            aParams.push(
+                "$filter=" + aFilterParts.join(" and ")
+            );
+        }
+    }
+
+    var sRequestUrl = sUrl + "?" + aParams.join("&");
+
+    console.log("Journal Entries URL:", sRequestUrl);
+
+    this._fetchAllPages(sRequestUrl)
+    .then(function (aResults) {
+
+        var mInitiator = {};
+        var mRecipient = {};
+        var aInitiatorOptions = [];
+        var aRecipientOptions = [];
+
+        aResults.forEach(function (oRow) {
+            if (oRow.in_companycode && !mInitiator[oRow.in_companycode]) {
+                mInitiator[oRow.in_companycode] = true;
+                aInitiatorOptions.push({ companyCode: oRow.in_companycode });
+            }
+            if (oRow.rec_companycode && !mRecipient[oRow.rec_companycode]) {
+                mRecipient[oRow.rec_companycode] = true;
+                aRecipientOptions.push({ companyCode: oRow.rec_companycode });
+            }
+        });
+
+        oModel.setProperty("/referenceData/searchInitiatorCCOptions", aInitiatorOptions);
+        oModel.setProperty("/referenceData/searchRecipientCCOptions", aRecipientOptions);
+
+        console.log("Journal Entries loaded:", aResults.length, "total records");
+
+        oModel.setProperty("/allSearchResults", aResults);
+        oModel.setProperty("/searchResults", aResults);
+        oModel.setProperty("/searchResultCount", aResults.length);
+
+    })
+    .catch(function (oError) {
+
+        console.error("Error loading Journal Entries:", oError);
+
+        oModel.setProperty("/allSearchResults", []);
+        oModel.setProperty("/searchResults", []);
+        oModel.setProperty("/searchResultCount", 0);
+
+        sap.m.MessageToast.show("Unable to load Journal Entries.");
+    });
+},
 
         _loadReferenceData: function () {
             var oModel = this.getView().getModel();
@@ -78,8 +215,19 @@ sap.ui.define([
 
 
         _initModel: function () {
+
+            
             _rowCounter = 1;
+
             var oData = {
+
+                  search: {
+                            in_companycode: "",
+                            rec_companycode: "",
+                         accountingDocumentTemp: "",
+                         inAccountingDocument: "",
+                             recAccountingDocument: ""
+    },
                 headerData: {
                     transactionType: Constants.TRANSACTION_TYPE.AR,
                     transactionTypeIndex: 0,
@@ -152,124 +300,7 @@ sap.ui.define([
                     // ]
                 },
 
-        //     Getting data 
-    _loadJournalEntries: function (oFilters) {
-    var oModel = this.getView().getModel();
-    var that = this;
-
-    var sUrl =
-        "/sap/opu/odata4/sap/zsb_interco_app/srvd/sap/zsd_interco_app/0001/" +
-        "ZC_INTERCO_JE_HEADER";
-
-    var aParams = [];
-
-    aParams.push(
-        "$select=" +
-        [
-            "accountingdocument_temp",
-            "in_companycode",
-            "rec_companycode",
-            "in_accountingdocument",
-            "rec_accountingdocument",
-            "documentreferenceid",
-            "documentdate",
-            "postingdate",
-            "amount",
-            "currencycode",
-            "createdbyuser"
-        ].join(",")
-    );
-
-    if (oFilters) {
-        var aFilterParts = [];
-
-        if (oFilters.in_companycode) {
-            aFilterParts.push(
-                "in_companycode eq '" +
-                encodeURIComponent(oFilters.in_companycode).replace(/%20/g, " ") +
-                "'"
-            );
-        }
-
-        if (oFilters.rec_companycode) {
-            aFilterParts.push(
-                "rec_companycode eq '" +
-                encodeURIComponent(oFilters.rec_companycode).replace(/%20/g, " ") +
-                "'"
-            );
-        }
-
-        if (oFilters.accountingdocument_temp) {
-            aFilterParts.push(
-                "accountingdocument_temp eq '" +
-                encodeURIComponent(oFilters.accountingdocument_temp).replace(/%20/g, " ") +
-                "'"
-            );
-        }
-
-        if (oFilters.in_accountingdocument) {
-            aFilterParts.push(
-                "in_accountingdocument eq '" +
-                encodeURIComponent(oFilters.in_accountingdocument).replace(/%20/g, " ") +
-                "'"
-            );
-        }
-
-        if (oFilters.rec_accountingdocument) {
-            aFilterParts.push(
-                "rec_accountingdocument eq '" +
-                encodeURIComponent(oFilters.rec_accountingdocument).replace(/%20/g, " ") +
-                "'"
-            );
-        }
-
-        if (aFilterParts.length > 0) {
-            aParams.push("$filter=" + aFilterParts.join(" and "));
-        }
-    }
-
-    var sRequestUrl = sUrl + "?" + aParams.join("&");
-
-    fetch(sRequestUrl, {
-        method: "GET",
-        headers: {
-            "Accept": "application/json"
-        }
-    })
-    .then(function (oResponse) {
-        if (!oResponse.ok) {
-            throw new Error(
-                "HTTP " + oResponse.status + " - " + oResponse.statusText
-            );
-        }
-
-        return oResponse.json();
-    })
-    .then(function (oData) {
-
-        var aResults = oData.value || [];
-
-        console.log("Journal Entries API response:", oData);
-        console.log("Journal Entries:", aResults);
-
-        oModel.setProperty("/allSearchResults", aResults);
-        oModel.setProperty("/searchResults", aResults);
-        oModel.setProperty("/searchResultCount", aResults.length);
-
-    })
-    .catch(function (oError) {
-
-        console.error("Error loading Journal Entries:", oError);
-
-        oModel.setProperty("/allSearchResults", []);
-        oModel.setProperty("/searchResults", []);
-        oModel.setProperty("/searchResultCount", 0);
-
-        sap.m.MessageToast.show(
-            "Unable to load Journal Entries."
-        );
-    });
-},
+       
 
                 initiatorLines: [
                     {
@@ -374,6 +405,10 @@ sap.ui.define([
                      glAccounts: [],
                      profitCenters: [],
                      costCenters: [],
+                        searchInitiatorCCOptions: [],
+                    searchRecipientCCOptions: [],
+                    initiatorCCVHData: [],
+                    recipientCCVHData: []
                 }
             };
 
@@ -756,6 +791,190 @@ sap.ui.define([
             });
         },
 
+
+
+        // ─── Search Screen Company Code Value Help ─────────────────────
+
+        _fetchCCVHData: function (sTarget) {
+            var oModel = this.getView().getModel();
+            var sBaseUrl =
+                "/sap/opu/odata4/sap/zsb_interco_app/srvd/sap/zsd_interco_app/0001/" +
+                "ZC_INTERCO_JE_HEADER";
+
+            var aSelect = sTarget === "initiator"
+                ? ["accountingdocument_temp", "in_companycode", "in_accountingdocument"]
+                : ["accountingdocument_temp", "rec_companycode", "rec_accountingdocument"];
+
+            var sUrl = sBaseUrl + "?$select=" + aSelect.join(",");
+
+            var that = this;
+            return that._fetchAllPages(sUrl)
+            .then(function (aResults) {
+                var sPath = sTarget === "initiator"
+                    ? "/referenceData/initiatorCCVHData"
+                    : "/referenceData/recipientCCVHData";
+                oModel.setProperty(sPath, aResults);
+            })
+            .catch(function (oError) {
+                console.error("CC VH data fetch error:", oError);
+                sap.m.MessageToast.show("Failed to load value help data.");
+            });
+        },
+
+onSearchInitiatorCCValueHelp: function () {
+    var oView = this.getView();
+    var that = this;
+
+    if (!this._pSearchInitiatorCCDialog) {
+        this._pSearchInitiatorCCDialog = Fragment.load({
+            id: oView.getId() + "--searchInitiatorCC",
+            name: "ZFI_INTERCO.fragment.SearchInitiatorCompanyCode",
+            controller: that
+        }).then(function (oDialog) {
+            oView.addDependent(oDialog);
+            return oDialog;
+        });
+    }
+
+    this._fetchCCVHData("initiator");
+
+    this._pSearchInitiatorCCDialog.then(function (oDialog) {
+        oDialog.open();
+    });
+},
+
+onSearchRecipientCCValueHelp: function () {
+    var oView = this.getView();
+    var that = this;
+
+    if (!this._pSearchRecipientCCDialog) {
+        this._pSearchRecipientCCDialog = Fragment.load({
+            id: oView.getId() + "--searchRecipientCC",
+            name: "ZFI_INTERCO.fragment.SearchRecipientCompanyCode",
+            controller: that
+        }).then(function (oDialog) {
+            oView.addDependent(oDialog);
+            return oDialog;
+        });
+    }
+
+    this._fetchCCVHData("recipient");
+
+    this._pSearchRecipientCCDialog.then(function (oDialog) {
+        oDialog.open();
+    });
+},
+
+        // ─── Search Initiator CC Dialog Events ────────────────────────────────
+
+        onSearchInitiatorCCFilter: function (oEvent) {
+            var sQuery = (
+                oEvent.getParameter("query") ||
+                oEvent.getParameter("newValue") ||
+                ""
+            ).trim();
+
+            var oTable = Fragment.byId(
+                this.getView().getId() + "--searchInitiatorCC",
+                "searchInitiatorCCTable"
+            );
+            if (!oTable) { return; }
+
+            var oBinding = oTable.getBinding("items");
+            if (sQuery) {
+                oBinding.filter([
+                    new Filter({
+                        filters: [
+                            new Filter("accountingdocument_temp", FilterOperator.Contains, sQuery),
+                            new Filter("in_companycode",           FilterOperator.Contains, sQuery),
+                            new Filter("in_accountingdocument",    FilterOperator.Contains, sQuery)
+                        ],
+                        and: false
+                    })
+                ]);
+            } else {
+                oBinding.filter([]);
+            }
+        },
+
+        onSearchInitiatorCCSelect: function (oEvent) {
+            var oContext = oEvent.getSource().getBindingContext();
+            var sCC = oContext.getProperty("in_companycode");
+
+            this.getView().getModel().setProperty("/search/in_companycode", sCC);
+
+            var oTable = Fragment.byId(
+                this.getView().getId() + "--searchInitiatorCC",
+                "searchInitiatorCCTable"
+            );
+            if (oTable) { oTable.getBinding("items").filter([]); }
+
+            this._pSearchInitiatorCCDialog.then(function (oDialog) {
+                oDialog.close();
+            });
+        },
+
+        onSearchInitiatorCCCancel: function () {
+            this._pSearchInitiatorCCDialog.then(function (oDialog) {
+                oDialog.close();
+            });
+        },
+
+        // ─── Search Recipient CC Dialog Events ────────────────────────────────
+
+        onSearchRecipientCCFilter: function (oEvent) {
+            var sQuery = (
+                oEvent.getParameter("query") ||
+                oEvent.getParameter("newValue") ||
+                ""
+            ).trim();
+
+            var oTable = Fragment.byId(
+                this.getView().getId() + "--searchRecipientCC",
+                "searchRecipientCCTable"
+            );
+            if (!oTable) { return; }
+
+            var oBinding = oTable.getBinding("items");
+            if (sQuery) {
+                oBinding.filter([
+                    new Filter({
+                        filters: [
+                            new Filter("accountingdocument_temp", FilterOperator.Contains, sQuery),
+                            new Filter("rec_companycode",          FilterOperator.Contains, sQuery),
+                            new Filter("rec_accountingdocument",   FilterOperator.Contains, sQuery)
+                        ],
+                        and: false
+                    })
+                ]);
+            } else {
+                oBinding.filter([]);
+            }
+        },
+
+        onSearchRecipientCCSelect: function (oEvent) {
+            var oContext = oEvent.getSource().getBindingContext();
+            var sCC = oContext.getProperty("rec_companycode");
+
+            this.getView().getModel().setProperty("/search/rec_companycode", sCC);
+
+            var oTable = Fragment.byId(
+                this.getView().getId() + "--searchRecipientCC",
+                "searchRecipientCCTable"
+            );
+            if (oTable) { oTable.getBinding("items").filter([]); }
+
+            this._pSearchRecipientCCDialog.then(function (oDialog) {
+                oDialog.close();
+            });
+        },
+
+        onSearchRecipientCCCancel: function () {
+            this._pSearchRecipientCCDialog.then(function (oDialog) {
+                oDialog.close();
+            });
+        },
+
         // ─── Company Code Value Help ───────────────────────────────────────────
 
         onInitiatorCCValueHelp: function () {
@@ -818,20 +1037,73 @@ sap.ui.define([
         },
 
         onCCPicklistConfirm: function (oEvent) {
-            var oSelected = oEvent.getParameter("selectedItem");
-            if (!oSelected) return;
 
-            var oCC = oSelected.getBindingContext().getObject();
-            var oModel = this.getView().getModel();
+    var oSelected = oEvent.getParameter("selectedItem");
 
-            if (this._sCCPicklistMode === "initiator") {
-                oModel.setProperty("/headerData/initiatorCC", oCC.companyCode);
-                this.onInitiatorCCChange();
-            } else {
-                oModel.setProperty("/headerData/recipientCC", oCC.companyCode);
-                this.onRecipientCCChange();
-            }
-        },
+    if (!oSelected) {
+        return;
+    }
+
+    var oCC = oSelected.getBindingContext().getObject();
+    var oModel = this.getView().getModel();
+    var sCompanyCode = oCC.companyCode;
+
+    // =========================================================
+    // SEARCH SCREEN - INITIATOR COMPANY CODE
+    // =========================================================
+    if (this._sCCPicklistMode === "searchInitiator") {
+
+        oModel.setProperty(
+            "/search/in_companycode",
+            sCompanyCode
+        );
+
+        return;
+    }
+
+    // =========================================================
+    // SEARCH SCREEN - RECIPIENT COMPANY CODE
+    // =========================================================
+    if (this._sCCPicklistMode === "searchRecipient") {
+
+        oModel.setProperty(
+            "/search/rec_companycode",
+            sCompanyCode
+        );
+
+        return;
+    }
+
+    // =========================================================
+    // EXISTING IC FORM - INITIATOR
+    // =========================================================
+    if (this._sCCPicklistMode === "initiator") {
+
+        oModel.setProperty(
+            "/headerData/initiatorCC",
+            sCompanyCode
+        );
+
+        this.onInitiatorCCChange();
+
+        return;
+    }
+
+    // =========================================================
+    // EXISTING IC FORM - RECIPIENT
+    // =========================================================
+    if (this._sCCPicklistMode === "recipient") {
+
+        oModel.setProperty(
+            "/headerData/recipientCC",
+            sCompanyCode
+        );
+
+        this.onRecipientCCChange();
+
+        return;
+    }
+},
 
         onCCPicklistCancel: function () {
             // SelectDialog self-closes
@@ -890,7 +1162,8 @@ onInitiatorGLAccountVH: function (oEvent) {
     var that = this;
 
     var sCompanyCode =
-        (oModel.getProperty("/headerData/initiatorCC") || "").trim();
+        // (oModel.getProperty("/headerData/initiatorCC") || "").trim();
+             (oModel.getProperty("/headerData/recipientCC") || "").trim();
 
     if (!sCompanyCode) {
         MessageToast.show("Please select Initiator Company Code first.");
@@ -972,29 +1245,98 @@ onInitiatorGLAccountVH: function (oEvent) {
 
 // ─── GL Account Picklist ────────────────────────────────────────────────
 
-onGLAccountPicklistSearch: function (oEvent) {
-    var sQuery = oEvent.getParameter("value");
-    var oBinding = oEvent.getParameter("itemsBinding");
+// onGLAccountPicklistSearch: function (oEvent) {
+//     var sQuery = oEvent.getParameter("value");
+//     var oBinding = oEvent.getParameter("itemsBinding");
 
-    if (!oBinding) {
+//     if (!oBinding) {
+//         return;
+//     }
+
+//     if (!sQuery) {
+//         oBinding.filter([]);
+//         return;
+//     }
+
+//     oBinding.filter([
+//         new Filter({
+//             filters: [
+//                 new Filter("GLAccount", FilterOperator.Contains, sQuery),
+//                 new Filter("GLAccountName", FilterOperator.Contains, sQuery),
+//                 new Filter("CompanyCode", FilterOperator.Contains, sQuery)
+//             ],
+//             and: false
+//         })
+//     ]);
+// },
+
+
+onGLAccountPicklistSearch: function (oEvent) {
+
+    var sQuery = (
+        oEvent.getParameter("value") || ""
+    ).trim();
+
+    var oModel = this.getView().getModel();
+
+    var sCompanyCode =
+        (oModel.getProperty("/headerData/recipientCC") || "").trim();
+
+    if (!sCompanyCode) {
+        MessageToast.show(
+            "Please select Initiator Company Code first."
+        );
         return;
     }
 
     if (!sQuery) {
-        oBinding.filter([]);
         return;
     }
 
-    oBinding.filter([
-        new Filter({
-            filters: [
-                new Filter("GLAccount", FilterOperator.Contains, sQuery),
-                new Filter("GLAccountName", FilterOperator.Contains, sQuery),
-                new Filter("CompanyCode", FilterOperator.Contains, sQuery)
-            ],
-            and: false
-        })
-    ]);
+    oModel.setProperty(
+        "/appState/isBusy",
+        true
+    );
+
+    MasterDataService.searchGLAccounts(
+        sCompanyCode,
+        sQuery
+    )
+    .then(function (aResults) {
+
+        console.log(
+            "Initiator GL Search Results:",
+            aResults
+        );
+
+        oModel.setProperty(
+            "/referenceData/glAccounts",
+            aResults || []
+        );
+    })
+    .catch(function (oError) {
+
+        console.error(
+            "Initiator GL Account search failed:",
+            oError
+        );
+
+        oModel.setProperty(
+            "/referenceData/glAccounts",
+            []
+        );
+
+        MessageToast.show(
+            "Failed to search GL Account."
+        );
+    })
+    .then(function () {
+
+        oModel.setProperty(
+            "/appState/isBusy",
+            false
+        );
+    });
 },
 
 onGLAccountPicklistConfirm: function (oEvent) {
@@ -1047,7 +1389,265 @@ onGLAccountPicklistCancel: function () {
     this._sGLAccountRowPath = "";
 },
 
+// ─── GL Account Value Help — Recipient ─────────────────────────────────
 
+onRecipientGLAccountVH: function (oEvent) {
+
+    var oModel = this.getView().getModel();
+    var oView = this.getView();
+    var that = this;
+
+    var sCompanyCode =
+     (oModel.getProperty("/headerData/initiatorCC") || "").trim();
+        // (oModel.getProperty("/headerData/recipientCC") || "").trim();
+
+    if (!sCompanyCode) {
+        MessageToast.show(
+            "Please select Recipient Company Code first."
+        );
+        return;
+    }
+
+    // Remember the exact Recipient GL row
+    var oInput = oEvent.getSource();
+    var oContext = oInput.getBindingContext();
+
+    if (!oContext) {
+        MessageToast.show(
+            "Unable to determine the selected Recipient GL line."
+        );
+        return;
+    }
+
+    this._sRecipientGLAccountRowPath = oContext.getPath();
+
+    oModel.setProperty("/appState/isBusy", true);
+
+    MasterDataService.getGLAccounts(sCompanyCode)
+        .then(function (aGLAccounts) {
+
+            oModel.setProperty("/appState/isBusy", false);
+
+            if (!aGLAccounts || !aGLAccounts.length) {
+                MessageToast.show(
+                    "No GL Accounts found for Company Code " +
+                    sCompanyCode + "."
+                );
+                return;
+            }
+
+            oModel.setProperty(
+                "/referenceData/glAccounts",
+                aGLAccounts
+            );
+
+            if (!that._pRecipientGLAccountDialog) {
+
+                that._pRecipientGLAccountDialog = Fragment.load({
+                    id: oView.getId() + "--recipientGLAccount",
+                    name: "ZFI_INTERCO.fragment.RecipientGLAccountValueHelp",
+                    controller: that
+                }).then(function (oDialog) {
+
+                    oView.addDependent(oDialog);
+
+                    return oDialog;
+                });
+            }
+
+            that._pRecipientGLAccountDialog.then(function (oDialog) {
+
+                var oBinding = oDialog.getBinding("items");
+
+                if (oBinding) {
+                    oBinding.filter([]);
+                }
+
+                oDialog.open();
+            });
+
+        })
+        .catch(function (oError) {
+
+            oModel.setProperty("/appState/isBusy", false);
+
+            MessageBox.error(
+                "Failed to load Recipient GL Accounts: " +
+                (oError && oError.message
+                    ? oError.message
+                    : String(oError))
+            );
+        });
+},
+// onRecipientGLAccountPicklistSearch: function (oEvent) {
+
+//     var sQuery = oEvent.getParameter("value");
+//     var oBinding = oEvent.getParameter("itemsBinding");
+
+//     if (!oBinding) {
+//         return;
+//     }
+
+//     if (!sQuery) {
+//         oBinding.filter([]);
+//         return;
+//     }
+
+//     oBinding.filter([
+//         new Filter({
+//             filters: [
+//                 new Filter(
+//                     "GLAccount",
+//                     FilterOperator.Contains,
+//                     sQuery
+//                 ),
+//                 new Filter(
+//                     "GLAccountName",
+//                     FilterOperator.Contains,
+//                     sQuery
+//                 ),
+//                 new Filter(
+//                     "CompanyCode",
+//                     FilterOperator.Contains,
+//                     sQuery
+//                 )
+//             ],
+//             and: false
+//         })
+//     ]);
+// },
+
+
+onRecipientGLAccountPicklistSearch: function (oEvent) {
+
+    var sQuery = (
+        oEvent.getParameter("value") || ""
+    ).trim();
+
+    var oModel = this.getView().getModel();
+
+    var sCompanyCode =
+        (oModel.getProperty("/headerData/initiatorCC") || "").trim();
+
+    if (!sCompanyCode) {
+        MessageToast.show(
+            "Please select Recipient Company Code first."
+        );
+        return;
+    }
+
+    if (!sQuery) {
+        return;
+    }
+
+    oModel.setProperty(
+        "/appState/isBusy",
+        true
+    );
+
+    MasterDataService.searchGLAccounts(
+        sCompanyCode,
+        sQuery
+    )
+    .then(function (aResults) {
+
+        console.log(
+            "Recipient GL Search Results:",
+            aResults
+        );
+
+        oModel.setProperty(
+            "/referenceData/glAccounts",
+            aResults || []
+        );
+    })
+    .catch(function (oError) {
+
+        console.error(
+            "Recipient GL Account search failed:",
+            oError
+        );
+
+        oModel.setProperty(
+            "/referenceData/glAccounts",
+            []
+        );
+
+        MessageToast.show(
+            "Failed to search Recipient GL Account."
+        );
+    })
+    .then(function () {
+
+        oModel.setProperty(
+            "/appState/isBusy",
+            false
+        );
+    });
+},
+
+
+onRecipientGLAccountPicklistConfirm: function (oEvent) {
+
+    var oSelectedItem = oEvent.getParameter("selectedItem");
+
+    if (!oSelectedItem) {
+        return;
+    }
+
+    var oContext = oSelectedItem.getBindingContext();
+
+    if (!oContext) {
+        MessageToast.show(
+            "Unable to determine the selected GL Account."
+        );
+        return;
+    }
+
+    var oGLAccount = oContext.getObject();
+
+    var sGLAccount = oGLAccount.GLAccount || "";
+
+    if (!sGLAccount) {
+        MessageToast.show(
+            "Selected GL Account is empty."
+        );
+        return;
+    }
+
+    var oModel = this.getView().getModel();
+
+    var sRowPath = this._sRecipientGLAccountRowPath;
+
+    if (!sRowPath) {
+        MessageToast.show(
+            "Unable to determine the Recipient GL coding line."
+        );
+        return;
+    }
+
+    // IMPORTANT:
+    // Write to recipientLines, not initiatorLines.
+    oModel.setProperty(
+        sRowPath + "/glAccount",
+        sGLAccount
+    );
+
+    this._recalculateRecipientBalance();
+
+    this._sRecipientGLAccountRowPath = "";
+
+    MessageToast.show(
+        "GL Account " + sGLAccount + " selected."
+    );
+},
+
+
+onRecipientGLAccountPicklistCancel: function () {
+
+    this._sRecipientGLAccountRowPath = "";
+
+},
 // ─── Profit Center Value Help — Initiator ────────────────────────────────
 
 onInitiatorProfitCenterValueHelp: function (oEvent) {
@@ -1242,6 +1842,195 @@ onProfitCenterPicklistCancel: function () {
 
 },
 
+// ─── Profit Center Value Help — Recipient ───────────────────────────────
+
+onRecipientProfitCenterValueHelp: function (oEvent) {
+
+    var oModel = this.getView().getModel();
+    var oView = this.getView();
+    var that = this;
+
+    var sCompanyCode =
+        (oModel.getProperty("/headerData/recipientCC") || "").trim();
+
+    if (!sCompanyCode) {
+        MessageToast.show(
+            "Please select Recipient Company Code first."
+        );
+        return;
+    }
+
+    var oInput = oEvent.getSource();
+    var oContext = oInput.getBindingContext();
+
+    if (!oContext) {
+        MessageToast.show(
+            "Unable to determine the selected Recipient Profit Center line."
+        );
+        return;
+    }
+
+    this._sRecipientProfitCenterRowPath = oContext.getPath();
+
+    oModel.setProperty("/appState/isBusy", true);
+
+    MasterDataService.getProfitCenters(sCompanyCode)
+        .then(function (aProfitCenters) {
+
+            oModel.setProperty("/appState/isBusy", false);
+
+            if (!aProfitCenters || !aProfitCenters.length) {
+
+                MessageToast.show(
+                    "No Profit Centers found for Company Code " +
+                    sCompanyCode + "."
+                );
+
+                return;
+            }
+
+            oModel.setProperty(
+                "/referenceData/profitCenters",
+                aProfitCenters
+            );
+
+            if (!that._pRecipientProfitCenterDialog) {
+
+                that._pRecipientProfitCenterDialog = Fragment.load({
+                    id: oView.getId() + "--recipientProfitCenter",
+                    name: "ZFI_INTERCO.fragment.RecipientProfitCenterPicklist",
+                    controller: that
+                }).then(function (oDialog) {
+
+                    oView.addDependent(oDialog);
+
+                    return oDialog;
+                });
+            }
+
+            that._pRecipientProfitCenterDialog.then(function (oDialog) {
+
+                var oBinding = oDialog.getBinding("items");
+
+                if (oBinding) {
+                    oBinding.filter([]);
+                }
+
+                oDialog.open();
+            });
+
+        })
+        .catch(function (oError) {
+
+            oModel.setProperty("/appState/isBusy", false);
+
+            MessageBox.error(
+                "Failed to load Recipient Profit Centers: " +
+                (oError && oError.message
+                    ? oError.message
+                    : String(oError))
+            );
+        });
+},
+onRecipientProfitCenterPicklistSearch: function (oEvent) {
+
+    var sQuery = oEvent.getParameter("value");
+    var oBinding = oEvent.getParameter("itemsBinding");
+
+    if (!oBinding) {
+        return;
+    }
+
+    if (!sQuery) {
+        oBinding.filter([]);
+        return;
+    }
+
+    oBinding.filter([
+        new Filter({
+            filters: [
+                new Filter(
+                    "profitCenter",
+                    FilterOperator.Contains,
+                    sQuery
+                ),
+                new Filter(
+                    "description",
+                    FilterOperator.Contains,
+                    sQuery
+                ),
+                new Filter(
+                    "companyCode",
+                    FilterOperator.Contains,
+                    sQuery
+                )
+            ],
+            and: false
+        })
+    ]);
+},
+
+
+onRecipientProfitCenterPicklistConfirm: function (oEvent) {
+
+    var oSelectedItem = oEvent.getParameter("selectedItem");
+
+    if (!oSelectedItem) {
+        return;
+    }
+
+    var oContext = oSelectedItem.getBindingContext();
+
+    if (!oContext) {
+        MessageToast.show(
+            "Unable to determine the selected Recipient Profit Center."
+        );
+        return;
+    }
+
+    var oProfitCenter = oContext.getObject();
+
+    var sProfitCenter =
+        oProfitCenter.profitCenter || "";
+
+    if (!sProfitCenter) {
+        MessageToast.show(
+            "Selected Profit Center is empty."
+        );
+        return;
+    }
+
+    var oModel = this.getView().getModel();
+
+    var sRowPath =
+        this._sRecipientProfitCenterRowPath;
+
+    if (!sRowPath) {
+        MessageToast.show(
+            "Unable to determine the Recipient GL coding line."
+        );
+        return;
+    }
+
+    oModel.setProperty(
+        sRowPath + "/profitCenter",
+        sProfitCenter
+    );
+
+    this._sRecipientProfitCenterRowPath = "";
+
+    MessageToast.show(
+        "Profit Center " + sProfitCenter + " selected."
+    );
+},
+
+
+onRecipientProfitCenterPicklistCancel: function () {
+
+    this._sRecipientProfitCenterRowPath = "";
+
+},
+
 
 onInitiatorCostCenterVH: function (oEvent) {
 
@@ -1250,7 +2039,8 @@ onInitiatorCostCenterVH: function (oEvent) {
     var oModel = this.getView().getModel();
 
     var sCompanyCode =
-        (oModel.getProperty("/headerData/initiatorCC") || "")
+
+        (oModel.getProperty("/headerData/recipientCC") || "")
             .trim()
             .toUpperCase();
 
@@ -1369,6 +2159,153 @@ onCostCenterPicklistCancel: function () {
 
     if (this._oCostCenterDialog) {
         this._oCostCenterDialog.close();
+    }
+
+},
+
+// ─── Cost Center Value Help — Recipient ─────────────────────────────────
+
+onRecipientCostCenterVH: function (oEvent) {
+
+    this._oRecipientCostCenterInput = oEvent.getSource();
+
+    var oModel = this.getView().getModel();
+
+    var sCompanyCode =
+        (oModel.getProperty("/headerData/initiatorCC") || "")
+            .trim()
+            .toUpperCase();
+
+    if (!sCompanyCode) {
+
+        MessageToast.show(
+            "Please select Recipient Company Code first."
+        );
+
+        return;
+    }
+
+    MasterDataService.getCostCenters(sCompanyCode)
+        .then(function (aCostCenters) {
+
+            oModel.setProperty(
+                "/referenceData/costCenters",
+                aCostCenters
+            );
+
+            if (!aCostCenters || !aCostCenters.length) {
+
+                MessageToast.show(
+                    "No Cost Centers found for Company Code " +
+                    sCompanyCode + "."
+                );
+
+                return;
+            }
+
+            if (!this._oRecipientCostCenterDialog) {
+
+                this._oRecipientCostCenterDialog =
+                    sap.ui.xmlfragment(
+                        this.getView().getId(),
+                        "ZFI_INTERCO.fragment.RecipientCostCenterValueHelp",
+                        this
+                    );
+
+                this.getView().addDependent(
+                    this._oRecipientCostCenterDialog
+                );
+            }
+
+            this._oRecipientCostCenterDialog.setModel(oModel);
+
+            this._oRecipientCostCenterDialog.open();
+
+        }.bind(this))
+        .catch(function (oError) {
+
+            console.error(
+                "[Recipient CostCenter VH] Error:",
+                oError
+            );
+
+            MessageToast.show(
+                "Failed to load Recipient Cost Centers."
+            );
+
+        });
+},
+
+onRecipientCostCenterPicklistSearch: function (oEvent) {
+
+    var sValue = oEvent.getParameter("value");
+
+    var oFilter = new sap.ui.model.Filter({
+        filters: [
+            new sap.ui.model.Filter(
+                "CostCenter",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            ),
+            new sap.ui.model.Filter(
+                "CostCenter_Text",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            )
+        ],
+        and: false
+    });
+
+    oEvent.getSource()
+        .getBinding("items")
+        .filter(
+            sValue ? [oFilter] : []
+        );
+},
+
+
+onRecipientCostCenterPicklistConfirm: function (oEvent) {
+
+    var oSelectedItem =
+        oEvent.getParameter("selectedItem");
+
+    if (!oSelectedItem ||
+        !this._oRecipientCostCenterInput) {
+        return;
+    }
+
+    var oContext =
+        oSelectedItem.getBindingContext();
+
+    if (!oContext) {
+        return;
+    }
+
+    var oCostCenter =
+        oContext.getObject();
+
+    this._oRecipientCostCenterInput.setValue(
+        oCostCenter.CostCenter
+    );
+
+    this._oRecipientCostCenterInput
+        .getBindingContext()
+        .getModel()
+        .setProperty(
+            this._oRecipientCostCenterInput
+                .getBindingContext()
+                .getPath() + "/costCenter",
+            oCostCenter.CostCenter
+        );
+
+    this._oRecipientCostCenterDialog.close();
+},
+
+
+onRecipientCostCenterPicklistCancel: function () {
+
+    if (this._oRecipientCostCenterDialog) {
+        this._oRecipientCostCenterDialog.close();
     }
 
 },
@@ -2003,84 +2940,290 @@ onCostCenterPicklistCancel: function () {
             }, 500);
         },
 
+        // onInitiatorValidate: function () {
+        //     var oModel = this.getView().getModel();
+        //     oModel.setProperty("/appState/isBusy", true);
+
+        //     var that = this;
+        //     setTimeout(function () {
+        //         var aMessages = [];
+
+        //         function addMsg(type, cls, num, text) {
+        //             aMessages.push({ type: type, msgClass: cls, msgNum: num, text: text });
+        //         }
+
+        //         var aLines = oModel.getProperty("/initiatorLines") || [];
+        //         var aUserLines = aLines.filter(function (l) { return !l.isSystemLine; });
+
+        //         // Header validation
+        //         var oHeader = oModel.getProperty("/headerData");
+        //         if (!oHeader.initiatorCC) addMsg("E", "ZFI", "001", "Initiator Company Code is required.");
+        //         if (!oHeader.recipientCC) addMsg("E", "ZFI", "002", "Recipient Company Code is required.");
+        //         if (!oHeader.postingDate) addMsg("E", "ZFI", "003", "Posting Date is required.");
+
+        //         var fTaxAmount = parseFloat(oHeader.taxAmount) || 0;
+        //         var sTaxCode = oHeader.initiatorTaxCode;
+        //         if (fTaxAmount > 0 && !sTaxCode) {
+        //             oModel.setProperty("/appState/isBusy", false);
+        //             oModel.setProperty("/initiatorValidation", {
+        //                 visible: true,
+        //                 state: "Error",
+        //                 text: "Tax Code is required when a Tax Amount is entered. Please select a Tax / VAT Code."
+        //             });
+        //             return;
+        //         }
+
+
+        //         // Line items check
+        //         if (aUserLines.length === 0) {
+        //             addMsg("E", "ZFI", "004", "At least one G/L line item must be entered.");
+        //         }
+
+        //         aUserLines.forEach(function (line, idx) {
+        //             if (!line.glAccount) {
+        //                 addMsg("E", "ZFI", "005", "Line " + (idx + 2) + ": G/L Account is missing.");
+        //             }
+        //             if (!line.amountDC || parseFloat(line.amountDC) === 0) {
+        //                 addMsg("E", "ZFI", "006", "Line " + (idx + 2) + ": Amount must be greater than zero.");
+        //             }
+        //         });
+
+        //         // Balance check
+        //         var oBalance = oModel.getProperty("/initiatorBalance");
+        //         if (!oBalance.isBalanced) {
+        //             addMsg("E", "ZFI", "007", "Document is not in balance. Net difference: " + oBalance.netAmount);
+        //         }
+
+        //         oModel.setProperty("/appState/isBusy", false);
+
+        //         var bHasError = aMessages.some(function (m) { return m.type === "E"; });
+        //         if (bHasError) {
+        //             oModel.setProperty("/initiatorValidation", {
+        //                 visible: true,
+        //                 state: "Error",
+        //                 text: "Validation failed with " + aMessages.length + " error(s)."
+        //             });
+        //             MessageBox.error("Validation failed. Please review the highlighted errors.");
+        //         } else {
+        //             oModel.setProperty("/initiatorValidation", {
+        //                 visible: true,
+        //                 state: "Success",
+        //                 text: "All checks passed successfully. Document is ready to post or submit."
+        //             });
+        //             MessageToast.show("Validation successful!");
+        //         }
+        //     }, 500);
+        // },
+
         onInitiatorValidate: function () {
-            var oModel = this.getView().getModel();
-            oModel.setProperty("/appState/isBusy", true);
 
-            var that = this;
-            setTimeout(function () {
-                var aMessages = [];
+    var oModel = this.getView().getModel();
 
-                function addMsg(type, cls, num, text) {
-                    aMessages.push({ type: type, msgClass: cls, msgNum: num, text: text });
-                }
+    // ---------------------------------------------------------
+    // 1. Run existing UI validation first
+    // ---------------------------------------------------------
+    var oHeader = oModel.getProperty("/headerData") || {};
+    var aInitiatorLines =
+        oModel.getProperty("/initiatorLines") || [];
 
-                var aLines = oModel.getProperty("/initiatorLines") || [];
-                var aUserLines = aLines.filter(function (l) { return !l.isSystemLine; });
+    var aUserLines = aInitiatorLines.filter(function (oLine) {
+        return !oLine.isSystemLine;
+    });
 
-                // Header validation
-                var oHeader = oModel.getProperty("/headerData");
-                if (!oHeader.initiatorCC) addMsg("E", "ZFI", "001", "Initiator Company Code is required.");
-                if (!oHeader.recipientCC) addMsg("E", "ZFI", "002", "Recipient Company Code is required.");
-                if (!oHeader.postingDate) addMsg("E", "ZFI", "003", "Posting Date is required.");
+    // Header checks
+    if (!oHeader.initiatorCC) {
+        MessageBox.error("Initiator Company Code is required.");
+        return;
+    }
 
-                var fTaxAmount = parseFloat(oHeader.taxAmount) || 0;
-                var sTaxCode = oHeader.initiatorTaxCode;
-                if (fTaxAmount > 0 && !sTaxCode) {
-                    oModel.setProperty("/appState/isBusy", false);
-                    oModel.setProperty("/initiatorValidation", {
-                        visible: true,
-                        state: "Error",
-                        text: "Tax Code is required when a Tax Amount is entered. Please select a Tax / VAT Code."
-                    });
-                    return;
-                }
+    if (!oHeader.recipientCC) {
+        MessageBox.error("Recipient Company Code is required.");
+        return;
+    }
 
+    if (!oHeader.postingDate) {
+        MessageBox.error("Posting Date is required.");
+        return;
+    }
 
-                // Line items check
-                if (aUserLines.length === 0) {
-                    addMsg("E", "ZFI", "004", "At least one G/L line item must be entered.");
-                }
+    // Tax validation
+    var fTaxAmount =
+        parseFloat(oHeader.taxAmount) || 0;
 
-                aUserLines.forEach(function (line, idx) {
-                    if (!line.glAccount) {
-                        addMsg("E", "ZFI", "005", "Line " + (idx + 2) + ": G/L Account is missing.");
-                    }
-                    if (!line.amountDC || parseFloat(line.amountDC) === 0) {
-                        addMsg("E", "ZFI", "006", "Line " + (idx + 2) + ": Amount must be greater than zero.");
-                    }
-                });
+    if (
+        fTaxAmount > 0 &&
+        !oHeader.initiatorTaxCode
+    ) {
+        MessageBox.error(
+            "Tax Code is required when a Tax Amount is entered."
+        );
+        return;
+    }
 
-                // Balance check
-                var oBalance = oModel.getProperty("/initiatorBalance");
-                if (!oBalance.isBalanced) {
-                    addMsg("E", "ZFI", "007", "Document is not in balance. Net difference: " + oBalance.netAmount);
-                }
+    // At least one user line
+    if (aUserLines.length === 0) {
+        MessageBox.error(
+            "At least one G/L line item must be entered."
+        );
+        return;
+    }
 
-                oModel.setProperty("/appState/isBusy", false);
+    // Line validation
+    for (var i = 0; i < aUserLines.length; i++) {
 
-                var bHasError = aMessages.some(function (m) { return m.type === "E"; });
-                if (bHasError) {
-                    oModel.setProperty("/initiatorValidation", {
-                        visible: true,
-                        state: "Error",
-                        text: "Validation failed with " + aMessages.length + " error(s)."
-                    });
-                    MessageBox.error("Validation failed. Please review the highlighted errors.");
-                } else {
-                    oModel.setProperty("/initiatorValidation", {
-                        visible: true,
-                        state: "Success",
-                        text: "All checks passed successfully. Document is ready to post or submit."
-                    });
-                    MessageToast.show("Validation successful!");
-                }
-            }, 500);
-        },
+        var oLine = aUserLines[i];
+
+        if (!oLine.glAccount || oLine.glAccount === "—") {
+
+            MessageBox.error(
+                "Line " + (i + 2) +
+                ": G/L Account is missing."
+            );
+
+            return;
+        }
+
+        if (
+            !oLine.amountDC ||
+            parseFloat(oLine.amountDC) === 0
+        ) {
+
+            MessageBox.error(
+                "Line " + (i + 2) +
+                ": Amount must be greater than zero."
+            );
+
+            return;
+        }
+    }
+
+    // Balance validation
+    var oBalance =
+        oModel.getProperty("/initiatorBalance");
+
+    if (!oBalance || !oBalance.isBalanced) {
+
+        MessageBox.error(
+            "Document is not in balance. Net difference: " +
+            (oBalance ? oBalance.netAmount : "0.00")
+        );
+
+        return;
+    }
+
+    // ---------------------------------------------------------
+    // 2. UI validation passed
+    // ---------------------------------------------------------
+    oModel.setProperty(
+        "/appState/isBusy",
+        true
+    );
+
+    oModel.setProperty(
+        "/initiatorValidation",
+        {
+            visible: true,
+            state: "Information",
+            text: "Validating document in SAP..."
+        }
+    );
+
+    // ---------------------------------------------------------
+    // 3. Get Recipient lines also
+    //
+    // saveDraftAndSimulate creates the complete draft:
+    // Header + Initiator Items + Recipient Items
+    // ---------------------------------------------------------
+    var aRecipientLines =
+        oModel.getProperty("/recipientLines") || [];
+
+    // ---------------------------------------------------------
+    // 4. Call MasterDataService
+    // ---------------------------------------------------------
+    MasterDataService.saveDraftAndSimulate(
+        oHeader,
+        aInitiatorLines,
+        aRecipientLines
+    )
+
+    .then(function (oResult) {
+
+        console.log(
+            "[Main] SAP Simulation successful:",
+            oResult
+        );
+
+        oModel.setProperty(
+            "/appState/isBusy",
+            false
+        );
+
+        // Store temporary document number
+        oModel.setProperty(
+            "/workflow/intercoRef",
+            oResult.accountingdocument_temp || ""
+        );
+
+        // Mark validation successful
+        oModel.setProperty(
+            "/initiatorValidation",
+            {
+                visible: true,
+                state: "Success",
+                text:
+                    "SAP validation successful. " +
+                    "No errors were returned."
+            }
+        );
+
+        MessageBox.success(
+            "SAP validation successful.\n\n" +
+            "Draft Document: " +
+            (oResult.accountingdocument_temp || "—")
+        );
+
+    })
+
+    .catch(function (oError) {
+
+        console.error(
+            "[Main] SAP Simulation failed:",
+            oError
+        );
+
+        oModel.setProperty(
+            "/appState/isBusy",
+            false
+        );
+
+        oModel.setProperty(
+            "/initiatorValidation",
+            {
+                visible: true,
+                state: "Error",
+                text:
+                    "SAP validation failed."
+            }
+        );
+
+        MessageBox.error(
+            "SAP validation failed.\n\n" +
+            (
+                oError &&
+                oError.message
+                    ? oError.message
+                    : "An unexpected error occurred."
+            )
+        );
+    });
+},
 
    onCreateNewIC: function () {
     var oApp = this.getView().byId("icAppRoot");
     var oFormPage = this.getView().byId("icFormPage");
+     var oModel = this.getView().getModel();
+            oModel.setProperty("/appState/isEditMode", true);
+            oModel.setProperty("/appState/isHeaderEditable", true);
 
     if (!oApp) {
         sap.m.MessageBox.error("icAppRoot not found");
@@ -2205,6 +3348,89 @@ onCostCenterPicklistCancel: function () {
                     }
                 }
             });
+        },
+
+
+        // filer 
+        onInitiatorCompanyCodeTokenUpdate: function (oEvent) {
+
+    var oModel = this.getView().getModel();
+    var aTokens = oEvent.getSource().getTokens();
+
+    var sValue = "";
+
+    if (aTokens.length > 0) {
+        sValue = aTokens[0].getKey() || aTokens[0].getText();
+    }
+
+    oModel.setProperty("/search/inCompanyCode", sValue);
+
+    console.log(
+        "Search Initiator Company Code:",
+        sValue
+    );
+},
+
+onRecipientCompanyCodeTokenUpdate: function (oEvent) {
+
+    var oModel = this.getView().getModel();
+    var aTokens = oEvent.getSource().getTokens();
+
+    var sValue = "";
+
+    if (aTokens.length > 0) {
+        sValue = aTokens[0].getKey() || aTokens[0].getText();
+    }
+
+    oModel.setProperty("/search/recCompanyCode", sValue);
+
+    console.log(
+        "Search Recipient Company Code:",
+        sValue
+    );
+},
+
+        // search filter
+ onGoSearch: function () {
+
+    var oModel = this.getView().getModel();
+
+      var sInitiatorCC =
+        (oModel.getProperty("/search/in_companycode") || "")
+            .trim()
+            .toUpperCase();
+
+    var sRecipientCC =
+        (oModel.getProperty("/search/rec_companycode") || "")
+            .trim()
+            .toUpperCase();
+
+    console.log("=================================");
+    console.log("IC SEARCH");
+    console.log("Initiator Company Code:", sInitiatorCC);
+    console.log("Recipient Company Code:", sRecipientCC);
+    console.log("=================================");
+
+    var oFilters = {
+        in_companycode: sInitiatorCC,
+        rec_companycode: sRecipientCC
+    };
+
+    this._loadJournalEntries(oFilters);
+},
+
+        // ─── Download Template ─────────────────────────────────────────────────
+
+        onDownloadInitiatorTemplate: function () {
+            var aLines =
+                this.getView().getModel().getProperty("/initiatorLines") || [];
+            InitiatorGLTemplate.download(aLines);
+        },
+
+        onDownloadRecipientTemplate: function () {
+            var aLines =
+                this.getView().getModel().getProperty("/recipientLines") || [];
+            RecipientGLTemplate.download(aLines);
         },
 
         onCreateNew: function () {
@@ -2345,7 +3571,7 @@ onCostCenterPicklistCancel: function () {
 
         onSubmitToApprove: function () {
             MessageBox.information("Submit to Approve ");
-        }
+        },
 
     });
 });

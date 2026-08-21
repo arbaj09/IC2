@@ -1,0 +1,28 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <SelectDialog
+        id="profitCenterPicklist"
+        title="Select Profit Center"
+        search="onProfitCenterPicklistSearch"
+        confirm="onProfitCenterPicklistConfirm"
+        cancel="onProfitCenterPicklistCancel"
+        noDataText="No Profit Centers found."
+        growing="true"
+        growingThreshold="50"
+        items="{
+            path: '/referenceData/profitCenters',
+            templateShareable: false
+        }">
+
+        <StandardListItem
+            title="{profitCenter}"
+            description="{description}"
+            info="{companyCode}"
+            icon="sap-icon://accounting-document"
+            iconInset="false" />
+
+    </SelectDialog>
+
+</core:FragmentDefinition>

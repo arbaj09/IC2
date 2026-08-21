@@ -14,7 +14,7 @@ sap.ui.define([], function () {
         // ── SAP document type codes ──────────────────────────────────────────────
         // Codes only. Display labels live in i18n as "documentType.IC" / "documentType.IA".
         DOCUMENT_TYPE: Object.freeze({
-            IC: "SA",
+            IC: "IC",
             IA: "IA"
         }),
 

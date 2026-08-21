@@ -1,0 +1,71 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Dialog
+        id="searchRecipientCCDialog"
+        title="Select Recipient Company Code"
+        contentWidth="44rem"
+        contentHeight="28rem"
+        draggable="true"
+        resizable="true"
+        stretch="{device>/system/phone}">
+
+        <subHeader>
+            <Toolbar>
+                <SearchField
+                    id="searchRecipientCCSearchField"
+                    width="100%"
+                    placeholder="Search by document, company code..."
+                    search=".onSearchRecipientCCFilter"
+                    liveChange=".onSearchRecipientCCFilter"/>
+            </Toolbar>
+        </subHeader>
+
+        <content>
+            <Table
+                id="searchRecipientCCTable"
+                noDataText="No records found."
+                growing="true"
+                growingThreshold="50"
+                items="{
+                    path: '/referenceData/recipientCCVHData',
+                    templateShareable: false
+                }">
+
+                <columns>
+                    <Column width="35%">
+                        <Text text="Accounting Document Temp"/>
+                    </Column>
+                    <Column width="30%">
+                        <Text text="Recipient Company Code"/>
+                    </Column>
+                    <Column width="35%">
+                        <Text text="Recipient Accounting Document"/>
+                    </Column>
+                </columns>
+
+                <items>
+                    <ColumnListItem
+                        type="Active"
+                        press=".onSearchRecipientCCSelect">
+                        <cells>
+                            <Text text="{accountingdocument_temp}"/>
+                            <Text text="{rec_companycode}"/>
+                            <Text text="{rec_accountingdocument}"/>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+
+            </Table>
+        </content>
+
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onSearchRecipientCCCancel"/>
+        </endButton>
+
+    </Dialog>
+
+</core:FragmentDefinition>
