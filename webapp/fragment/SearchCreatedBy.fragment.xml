@@ -1,0 +1,73 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Dialog
+        id="searchCreatedByDialog"
+        title="Select Initiator Preparer"
+        contentWidth="44rem"
+        contentHeight="28rem"
+        draggable="true"
+        resizable="true"
+        stretch="{device>/system/phone}">
+
+        <subHeader>
+            <Toolbar>
+                <SearchField
+                    id="searchCreatedBySearchField"
+                    width="100%"
+                    placeholder="Search by user ID, name..."
+                    search=".onSearchCreatedByFilter"
+                    liveChange=".onSearchCreatedByFilter"/>
+            </Toolbar>
+        </subHeader>
+
+        <content>
+            <Table
+                id="searchCreatedByTable"
+                mode="MultiSelect"
+                noDataText="No records found."
+                growing="true"
+                growingThreshold="50"
+                items="{
+                    path: '/referenceData/createdbyVHData',
+                    templateShareable: false
+                }">
+
+                <columns>
+                    <Column width="40%">
+                        <Text text="User ID"/>
+                    </Column>
+                    <Column width="60%">
+                        <Text text="Name"/>
+                    </Column>
+                </columns>
+
+                <items>
+                    <ColumnListItem>
+                        <cells>
+                            <Text text="{UserID}"/>
+                            <Text text="{PersonFullName}"/>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+
+            </Table>
+        </content>
+
+        <beginButton>
+            <Button
+                text="OK"
+                type="Emphasized"
+                press=".onSearchCreatedByConfirm"/>
+        </beginButton>
+
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onSearchCreatedByCancel"/>
+        </endButton>
+
+    </Dialog>
+
+</core:FragmentDefinition>

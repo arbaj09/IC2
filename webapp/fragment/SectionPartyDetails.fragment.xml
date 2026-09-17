@@ -80,6 +80,7 @@
                                 valueState="{/headerData/recipientBPState}"
                                 valueStateText="Recipient Business Partner is required."/>
 
+
                             <Label text="Company Code" required="true"/>
                             <HBox id="hboxRecipientCC">
                                 <Input
@@ -102,6 +103,16 @@
                                 id="txtRecipientCountry"
                                 text="{/headerData/recipientCountry}"
                                 renderWhitespace="false"/>
+
+                                  <Label text="Recipient Preparer"/>
+                            <Input
+                                id="inpRecipientPreparer"
+                                value="{/headerData/recipientPreparer}"
+                                editable="{/appState/isHeaderEditable}"
+                                showValueHelp="{/appState/isHeaderEditable}"
+                                valueHelpRequest="onRecipientPreparerValueHelp"
+                                width="200px"
+                                placeholder="Select Recipient Preparer"/>
                         </f:content>
                     </f:SimpleForm>
                 </VBox>

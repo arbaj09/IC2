@@ -1,0 +1,63 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Dialog
+        id="searchCreatedByDialog"
+        title="Select Created By"
+        contentWidth="32rem"
+        contentHeight="28rem"
+        draggable="true"
+        resizable="true"
+        stretch="{device>/system/phone}">
+
+        <subHeader>
+            <Toolbar>
+                <SearchField
+                    id="searchCreatedBySearchField"
+                    width="100%"
+                    placeholder="Search by user..."
+                    search=".onSearchCreatedByFilter"
+                    liveChange=".onSearchCreatedByFilter"/>
+            </Toolbar>
+        </subHeader>
+
+        <content>
+            <Table
+                id="searchCreatedByTable"
+                noDataText="No records found."
+                growing="true"
+                growingThreshold="50"
+                items="{
+                    path: '/referenceData/createdbyVHData',
+                    templateShareable: false
+                }">
+
+                <columns>
+                    <Column width="100%">
+                        <Text text="Created By"/>
+                    </Column>
+                </columns>
+
+                <items>
+                    <ColumnListItem
+                        type="Active"
+                        press=".onSearchCreatedBySelect">
+                        <cells>
+                            <Text text="{createdby}"/>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+
+            </Table>
+        </content>
+
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onSearchCreatedByCancel"/>
+        </endButton>
+
+    </Dialog>
+
+</core:FragmentDefinition>

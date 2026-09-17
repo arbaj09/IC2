@@ -42,7 +42,7 @@ sap.ui.define([], function () {
         { header: "Bus.Partner",   key: "businessPartner", width: 14, type: "string" },
         { header: "Amount (DC)",   key: "amountDC",        width: 15, type: "number" },
         { header: "Tax Code",      key: "taxCode",         width: 11, type: "string" },
-        { header: "Trdg Ptnr",    key: "tradingPartner",  width: 12, type: "string" },
+        { header: "Trdg Ptnr",    key: "tradingPartner",  width: 12, type: "string",skipValue: true },
         { header: "Ptnr PrCtr",   key: "partnerPrCtr",    width: 12, type: "string" },
         { header: "WBS Element",   key: "wbsElement",      width: 14, type: "string" },
         { header: "Cost Center",   key: "costCenter",      width: 14, type: "string" },
@@ -79,9 +79,13 @@ sap.ui.define([], function () {
 
         // Data rows
         // ── To exclude rows later, add a .filter() here before the forEach ──
-        aLines.forEach(function (oLine) {
+        aLines.slice(1).forEach(function (oLine) {
             var oRow = {};
             COLUMNS.forEach(function (oCol) {
+                  if (oCol.skipValue) {
+                    oRow[oCol.key] = "";
+                    return;
+                }
                 var vVal = oLine[oCol.key];
                 if (oCol.type === "number") {
                     var nVal = parseFloat(vVal);
@@ -121,6 +125,66 @@ sap.ui.define([], function () {
          *
          * @param {Array} aLines  Current /recipientLines array from the JSON model.
          */
+
+        /**
+         * Reads an .xlsx File object and returns a Promise<Array> of line objects.
+         * Row 1 (header) is skipped; column mapping is driven by header text.
+         *
+         * @param {File} oFile  The uploaded .xlsx File.
+         * @returns {Promise<Array>}
+         */
+        parse: function (oFile) {
+            return new Promise(function (resolve, reject) {
+                if (!window.ExcelJS) {
+                    reject(new Error("ExcelJS library is not loaded."));
+                    return;
+                }
+                var oReader = new FileReader();
+                oReader.onload = function (oEvt) {
+                    var oWorkbook = new window.ExcelJS.Workbook();
+                    oWorkbook.xlsx.load(oEvt.target.result).then(function () {
+                        var oSheet = oWorkbook.worksheets[0];
+                        if (!oSheet) {
+                            reject(new Error("No worksheet found in the uploaded file."));
+                            return;
+                        }
+                        // Map header text → column definition using row 1
+                        var mColToKey = {};
+                        oSheet.getRow(1).eachCell(function (oCell, iColNum) {
+                            var sHeader = String(oCell.value || "").trim();
+                            var oColDef = COLUMNS.find(function (c) { return c.header === sHeader; });
+                            if (oColDef) { mColToKey[iColNum] = oColDef; }
+                        });
+                        var aResult = [];
+                        oSheet.eachRow(function (oRow, iRowNum) {
+                            if (iRowNum === 1) { return; } // skip header
+                            var bEmpty = true;
+                            oRow.eachCell(function (oCell) {
+                                var v = oCell.value;
+                                if (v !== null && v !== undefined && v !== "") { bEmpty = false; }
+                            });
+                            if (bEmpty) { return; }
+                            var oLine = { isSystemLine: false, taxAmount: "0.00" };
+                            Object.keys(mColToKey).forEach(function (sCol) {
+                                var oColDef = mColToKey[sCol];
+                                var vVal = oRow.getCell(parseInt(sCol, 10)).value;
+                                if (oColDef.type === "number") {
+                                    var nVal = parseFloat(vVal);
+                                    oLine[oColDef.key] = isNaN(nVal) ? "" : nVal.toFixed(2);
+                                } else {
+                                    oLine[oColDef.key] = (vVal === null || vVal === undefined) ? "" : String(vVal);
+                                }
+                            });
+                            aResult.push(oLine);
+                        });
+                        resolve(aResult);
+                    }).catch(reject);
+                };
+                oReader.onerror = function () { reject(new Error("Failed to read the uploaded file.")); };
+                oReader.readAsArrayBuffer(oFile);
+            });
+        },
+ 
         download: function (aLines) {
             if (!aLines || aLines.length === 0) {
                 sap.m.MessageToast.show(

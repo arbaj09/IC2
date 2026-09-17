@@ -1,0 +1,73 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <Dialog
+        id="searchRecipientPreparerDialog"
+        title="Select Recipient Preparer"
+        contentWidth="44rem"
+        contentHeight="28rem"
+        draggable="true"
+        resizable="true"
+        stretch="{device>/system/phone}">
+
+        <subHeader>
+            <Toolbar>
+                <SearchField
+                    id="searchRecipientPreparerSearchField"
+                    width="100%"
+                    placeholder="Search by user ID, name..."
+                    search=".onSearchRecipientPreparerFilter"
+                    liveChange=".onSearchRecipientPreparerFilter"/>
+            </Toolbar>
+        </subHeader>
+
+        <content>
+            <Table
+                id="searchRecipientPreparerTable"
+                mode="MultiSelect"
+                noDataText="No records found."
+                growing="true"
+                growingThreshold="50"
+                items="{
+                    path: '/referenceData/searchRecipientPreparerVHData',
+                    templateShareable: false
+                }">
+
+                <columns>
+                    <Column width="40%">
+                        <Text text="User ID"/>
+                    </Column>
+                    <Column width="60%">
+                        <Text text="Name"/>
+                    </Column>
+                </columns>
+
+                <items>
+                    <ColumnListItem>
+                        <cells>
+                            <Text text="{UserID}"/>
+                            <Text text="{PersonFullName}"/>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+
+            </Table>
+        </content>
+
+        <beginButton>
+            <Button
+                text="OK"
+                type="Emphasized"
+                press=".onSearchRecipientPreparerConfirm"/>
+        </beginButton>
+
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onSearchRecipientPreparerCancel"/>
+        </endButton>
+
+    </Dialog>
+
+</core:FragmentDefinition>

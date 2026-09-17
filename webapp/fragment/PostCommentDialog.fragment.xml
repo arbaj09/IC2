@@ -1,0 +1,31 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        title="Post Document"
+        contentWidth="420px"
+        draggable="true">
+        <content>
+            <VBox class="sapUiSmallMarginBeginEnd sapUiSmallMarginTopBottom">
+                <Label text="Comment (optional)" class="sapUiTinyMarginBottom"/>
+                <TextArea
+                    value="{/postComment}"
+                    maxLength="255"
+                    rows="4"
+                    width="100%"
+                    placeholder="Add a comment — optional, max 255 characters"/>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                text="Continue"
+                type="Emphasized"
+                press="onPostCommentContinue"/>
+        </beginButton>
+        <endButton>
+            <Button
+                text="Skip"
+                press="onPostCommentContinue"/>
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

@@ -24,9 +24,14 @@ sap.ui.define([], function () {
         },
 
         // ── Tax amount → sap.ui.core.ValueState ─────────────────────────────
-        // Moves parseFloat() out of XML expression binding — now independently testable.
-        taxAmountState: function (sTaxAmount) {
-            return parseFloat(sTaxAmount) > 0 ? "Error" : "None";
+        // Green when the calculated tax matches the user-entered tax amount,
+        // red only when there is an actual mismatch (bTaxMismatch is the
+        // same flag used to show the tax mismatch MessageStrip).
+        taxAmountState: function (sTaxAmount, bTaxMismatch) {
+            if (!(parseFloat(sTaxAmount) > 0)) {
+                return "None";
+            }
+            return bTaxMismatch ? "Error" : "Success";
         },
 
         // ── Fiscal period display — composite binding (period, year) ─────────

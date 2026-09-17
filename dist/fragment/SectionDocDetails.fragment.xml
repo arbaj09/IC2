@@ -16,9 +16,8 @@
                 <DatePicker
                     id="dpDocDate"
                     value="{/headerData/documentDate}"
-                    displayFormat="dd.MM.yyyy"
                     valueFormat="dd.MM.yyyy"
-                    placeholder="dd.MM.yyyy"
+                    placeholder=""
                     change="onDocumentDateChange"
                     editable="{/appState/isHeaderEditable}"
                     width="180px"
@@ -31,9 +30,9 @@
                 <DatePicker
                     id="dpPostingDate"
                     value="{/headerData/postingDate}"
-                    displayFormat="dd.MM.yyyy"
+             
                     valueFormat="dd.MM.yyyy"
-                    placeholder="dd.MM.yyyy"
+                    placeholder=""
                     change="onPostingDateChange"
                     editable="{/appState/isHeaderEditable}"
                     width="180px"

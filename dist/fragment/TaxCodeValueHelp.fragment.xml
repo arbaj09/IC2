@@ -1,0 +1,35 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <TableSelectDialog
+        id="initiatorTaxCodePicklist"
+        title="Select Initiator Tax / VAT Code"
+        search="onInitiatorTaxCodePicklistSearch"
+        confirm="onInitiatorTaxCodePicklistConfirm"
+        cancel="onInitiatorTaxCodePicklistCancel"
+        noDataText="No Tax Codes found."
+        items="{
+            path: '/referenceData/initiatorTaxCodes',
+            templateShareable: false
+        }">
+
+        <columns>
+            <Column width="20%"><Label text="Tax Code"/></Column>
+            <Column width="45%"><Label text="Description"/></Column>
+            <Column width="20%"><Label text="Country"/></Column>
+            <Column width="15%"><Label text="Type"/></Column>
+        </columns>
+
+        <ColumnListItem type="Active">
+            <cells>
+                <Text text="{code}"/>
+                <Text text="{description}"/>
+                <Text text="{country}"/>
+                <Text text="{taxType}"/>
+            </cells>
+        </ColumnListItem>
+
+    </TableSelectDialog>
+
+</core:FragmentDefinition>

@@ -1,0 +1,67 @@
+<!-- <core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <SelectDialog
+        id="wbsPicklist"
+        title="Select WBS Element"
+        search="onWBSPicklistSearch"
+        confirm="onWBSPicklistConfirm"
+        cancel="onWBSPicklistCancel"
+        noDataText="No WBS Elements found."
+        items="{
+            path: '/referenceData/wbsElements',
+            templateShareable: false
+        }">
+
+        <StandardListItem
+            title="{ProjectElement}"
+            description="{ProjectElementDescription}"
+            info="{WBSElementInternalID}" />
+
+    </SelectDialog>
+
+</core:FragmentDefinition> -->
+
+
+
+
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <TableSelectDialog
+      id="wbsPicklist"
+        title="Select WBS Element"
+        search="onWBSPicklistSearch"
+        confirm="onWBSPicklistConfirm"
+        cancel="onWBSPicklistCancel"
+        noDataText="No WBS Elements found."
+        items="{
+            path: '/referenceData/wbsElements',
+            templateShareable: false
+        }">
+        <columns>
+            <Column width="25%"><Label text="ProjectElement"/></Column>
+            <Column width="40%"><Label text="WBSElementInternalID"/></Column>
+            <Column width="15%"><Label text="ProjectElementDescription"/></Column>
+            <Column width="15%"><Label text="CompanyCode"/></Column>
+            <Column width="20%"><Label text="ProfitCenter"/></Column>
+             <Column width="20%"><Label text="ControllingArea"/></Column>
+        </columns>
+
+        <ColumnListItem type="Active">
+            <cells>
+                <Text text="{ProjectElement}"/>
+                <Text text="{WBSElementInternalID}"/>
+                <Text text="{ProjectElementDescription}"/>
+                 <Text text="{CompanyCode}"/>
+                <Text text="{ProfitCenter}"/>
+                 <Text text="{ControllingArea}"/>
+               
+            </cells>
+        </ColumnListItem>
+
+    </TableSelectDialog>
+
+</core:FragmentDefinition>

@@ -1,4 +1,4 @@
-<core:FragmentDefinition
+<!-- <core:FragmentDefinition
     xmlns="sap.m"
     xmlns:core="sap.ui.core">
 
@@ -8,7 +8,12 @@
         contentWidth="40rem"
         contentHeight="25rem"
         draggable="true"
-        resizable="true">
+        resizable="true"
+         items="{
+                    path: '/referenceData/costCenters',
+                    templateShareable: false
+                }"
+        >
 
         <subHeader>
             <Toolbar>
@@ -25,10 +30,7 @@
                 noDataText="No Cost Centers found."
                 growing="true"
                 growingThreshold="50"
-                items="{
-                    path: '/referenceData/costCenters',
-                    templateShareable: false
-                }">
+               >
 
                 <columns>
 
@@ -76,5 +78,76 @@
         </endButton>
 
     </Dialog>
+
+</core:FragmentDefinition> -->
+
+
+<!-- 
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <SelectDialog
+       id="recipientCostCenterPicklist"
+        title="Select Recipient Cost Center"
+        search="onRecipientCostCenterPicklistSearch"
+        confirm="onRecipientCostCenterPicklistConfirm"
+        cancel="onRecipientCostCenterPicklistCancel"
+        noDataText="No Cost Center found."
+        items="{
+                    path: '/referenceData/costCenters',
+                    templateShareable: false
+                }">
+
+        <StandardListItem
+            title="{CostCenter}"
+            description="{CostCenter_Text}"
+            info="{CompanyCode}" />
+
+    </SelectDialog>
+
+</core:FragmentDefinition> -->
+
+
+
+
+
+
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+
+    <TableSelectDialog
+       id="recipientCostCenterPicklist"
+        title="Select Recipient Cost Center"
+        search="onRecipientCostCenterPicklistSearch"
+        confirm="onRecipientCostCenterPicklistConfirm"
+        cancel="onRecipientCostCenterPicklistCancel"
+        noDataText="No Cost Center found."
+        items="{
+                    path: '/referenceData/costCenters',
+                    templateShareable: false
+                }">
+
+        <columns>
+            <Column width="25%"><Label text="CostCenter"/></Column>
+            <Column width="40%"><Label text="CostCenter_Text"/></Column>
+            <Column width="15%"><Label text="Company Code"/></Column>
+            <Column width="20%"><Label text="ValidityStartDate"/></Column>
+             <Column width="20%"><Label text="ValiditEndDate"/></Column>
+        </columns>
+
+        <ColumnListItem type="Active">
+            <cells>
+                <Text text="{CostCenter}"/>
+                <Text text="{CostCenter_Text}"/>
+                <Text text="{CompanyCode}"/>
+                <Text text="{ValidityStartDate}"/>
+                 <Text text="{ValidityEndDate}"/>
+               
+            </cells>
+        </ColumnListItem>
+
+    </TableSelectDialog>
 
 </core:FragmentDefinition>

@@ -5,6 +5,7 @@
   "oauth2-configuration": {
     "redirect-uris": [
               "https://madiba-dev-subaccount-madiba-dev-zfi-interco-approuter.cfapps.us10-001.hana.ondemand.com/login/callback"
+         
     ]
   },
   "scopes": [

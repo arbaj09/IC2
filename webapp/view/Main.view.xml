@@ -16,7 +16,9 @@
         <Page
             id="searchPage"
             title="IC Entries"
-            showHeader="false">
+            showHeader="false"
+            busy="{/appState/isBusy}"
+            busyIndicatorDelay="0">
 
             <content>
 
@@ -87,8 +89,6 @@
     <VBox>
         <Label text="Recipient Company Code"/>
        <Input
-
-
         id="searchRecipientCompanyCode"
         width="100%"
         value="{/search/rec_companycode}"
@@ -99,19 +99,51 @@
        />
     </VBox>
 
-    <!-- Temporary Accounting Document -->
-    <!-- <VBox>
-        <Label text="Accounting Document (Temp)"/>
-        <Input
-            value="{/search/accountingDocumentTemp}"
-            placeholder="Accounting Document"/>
-    </VBox> -->
+    <!-- Created By (multi-select: token per selected Initiator Preparer) -->
+    <VBox>
+        <Label text="Initiator Preparer"/>
+        <MultiInput
+            id="searchCreatedBy"
+            width="100%"
+            placeholder="Initiator Preparer"
+            showValueHelp="true"
+            valueHelpRequest=".onSearchCreatedByValueHelp"
+            tokenUpdate=".onSearchCreatedByTokenUpdate"
+            showSuggestion="false"/>
+    </VBox>
+
+    <!-- Recipient Preparer (multi-select: token per selected person) -->
+    <VBox>
+        <Label text="Recipient Preparer"/>
+        <MultiInput
+            id="searchRecipientPreparer"
+            width="100%"
+            placeholder="Recipient Preparer"
+            showValueHelp="true"
+            valueHelpRequest=".onSearchRecipientPreparerValueHelp"
+            tokenUpdate=".onSearchRecipientPreparerTokenUpdate"
+            showSuggestion="false"/>
+    </VBox>
+
+    <!-- Approval Status (multi-select: token per selected status) -->
+    <VBox>
+        <Label text="Approval Status"/>
+        <MultiInput
+            id="searchApprovalStatus"
+            width="100%"
+            placeholder="Approval Status"
+            showValueHelp="true"
+            valueHelpRequest=".onSearchApprovalStatusValueHelp"
+            tokenUpdate=".onSearchApprovalStatusTokenUpdate"
+            showSuggestion="false"/>
+    </VBox>
 
     <!-- Initiator Accounting Document -->
     <!-- <VBox>
         <Label text="Initiator Accounting Document"/>
         <Input
-            value="{/search/inAccountingDocument}"
+            width="100%"
+            value="{/search/in_accountingdocument}"
             placeholder="Initiator Accounting Document"/>
     </VBox> -->
 
@@ -119,7 +151,8 @@
     <!-- <VBox>
         <Label text="Recipient Accounting Document"/>
         <Input
-            value="{/search/recAccountingDocument}"
+            width="100%"
+            value="{/search/rec_accountingdocument}"
             placeholder="Recipient Accounting Document"/>
     </VBox> -->
 
@@ -144,7 +177,9 @@
         minAutoRowCount="8"
         enableColumnReordering="true"
         alternateRowColors="true"
-        class="sapUiSizeCompact">
+        rowActionCount="1"
+        cellClick=".onTableRowClick"
+        class="sapUiSizeCompact sapUiTablePointerCursor">
 
         <!-- TABLE HEADER -->
         <table:extension>
@@ -167,145 +202,179 @@
             </OverflowToolbar>
         </table:extension>
 
-        <!-- COLUMNS -->
+        <!-- COLUMNS — order matches requirements screenshot -->
         <table:columns>
 
-            <!-- Accounting Document Temp -->
+            <!-- 1. Draft Accounting Document -->
             <table:Column width="12rem">
-                <Label text="Accounting Document (Temp)" />
-
+                <Label text="Draft Accounting Doc." />
                 <table:template>
                     <Link
-                        text="{accountingdocument_temp}"
+                        text="{= ${accountingdocument_temp} || '-' }"
                         press=".onOpenEntry" />
                 </table:template>
             </table:Column>
 
+            <!-- 2. Accounting Document Type -->
+            <table:Column width="10rem">
+                <Label text="Accounting Doc Type" />
+                <table:template>
+                    <Text text="{= ${accountingdocumenttype} || '-' }" wrapping="false" />
+                </table:template>
+            </table:Column>
 
-            <!-- Initiator Company Code -->
+            <!-- 3. Document Reference ID -->
+            <table:Column width="12rem">
+                <Label text="Document Reference ID" />
+                <table:template>
+                    <Text text="{= ${documentreferenceid} || '-' }" wrapping="false" />
+                </table:template>
+            </table:Column>
+
+            <!-- 4. Document Header Text -->
+            <table:Column width="14rem">
+                <Label text="Document Header Text" />
+                <table:template>
+                    <Text text="{= ${documentheadertext} || '-' }" wrapping="false" />
+                </table:template>
+            </table:Column>
+
+            <!-- 5. Initiator Company Code -->
             <table:Column width="11rem">
                 <Label text="Initiator Company Code" />
-
                 <table:template>
-                    <Text
-                        text="{in_companycode}"
-                        wrapping="false" />
+                    <Text text="{= ${in_companycode} || '-' }" wrapping="false" />
                 </table:template>
             </table:Column>
 
-
-            <!-- Recipient Company Code -->
+            <!-- 6. Receiver Company Code -->
             <table:Column width="11rem">
-                <Label text="Recipient Company Code" />
-
+                <Label text="Receiver Company Code" />
                 <table:template>
-                    <Text
-                        text="{rec_companycode}"
-                        wrapping="false" />
+                    <Text text="{= ${rec_companycode} || '-' }" wrapping="false" />
                 </table:template>
             </table:Column>
 
-
-            <!-- Initiator Accounting Document -->
-            <table:Column width="13rem">
-                <Label text="Initiator Accounting Document" />
-
-                <table:template>
-                    <Text
-                        text="{in_accountingdocument}"
-                        wrapping="false" />
-                </table:template>
-            </table:Column>
-
-
-            <!-- Recipient Accounting Document -->
-            <table:Column width="13rem">
-                <Label text="Recipient Accounting Document" />
-
-                <table:template>
-                    <Text
-                        text="{rec_accountingdocument}"
-                        wrapping="false" />
-                </table:template>
-            </table:Column>
-
-
-            <!-- Document Reference -->
-            <table:Column width="11rem">
-                <Label text="Document Reference" />
-
-                <table:template>
-                    <Text
-                        text="{documentreferenceid}"
-                        wrapping="false" />
-                </table:template>
-            </table:Column>
-
-
-            <!-- Document Date -->
+            <!-- 7. Document Date -->
             <table:Column width="10rem">
                 <Label text="Document Date" />
-
                 <table:template>
-                    <Text
-                        text="{documentdate}"
-                        wrapping="false" />
+                    <Text text="{= ${documentdate} || '-' }" wrapping="false" />
                 </table:template>
             </table:Column>
 
-
-            <!-- Posting Date -->
+            <!-- 8. Posting Date -->
             <table:Column width="10rem">
                 <Label text="Posting Date" />
-
                 <table:template>
-                    <Text
-                        text="{postingdate}"
-                        wrapping="false" />
+                    <Text text="{= ${postingdate} || '-' }" wrapping="false" />
                 </table:template>
             </table:Column>
 
+            <!-- 9. Tax Code -->
+            <table:Column width="8rem">
+                <Label text="Tax Code" />
+                <table:template>
+                    <Text text="{= ${taxcode} || '-' }" wrapping="false" />
+                </table:template>
+            </table:Column>
 
-            <!-- Amount -->
-            <table:Column
-                width="10rem"
-                hAlign="End">
+            <!-- 10. Tax Amount -->
+            <table:Column width="10rem" hAlign="End">
+                <Label text="Tax Amount" />
+                <table:template>
+                    <Text text="{= ${tax_amount} || '-' }" wrapping="false" />
+                </table:template>
+            </table:Column>
 
+            <!-- 11. Amount -->
+            <table:Column width="10rem" hAlign="End">
                 <Label text="Amount" />
-
                 <table:template>
-                    <ObjectNumber
-                        number="{amount}"
-                        emphasized="true" />
+                    <ObjectNumber number="{amount}" emphasized="true" />
                 </table:template>
             </table:Column>
 
-
-            <!-- Currency -->
+            <!-- 12. Currency -->
             <table:Column width="8rem">
                 <Label text="Currency" />
-
                 <table:template>
-                    <Text
-                        text="{currencycode}"
-                        wrapping="false" />
+                    <Text text="{= ${currencycode} || '-' }" wrapping="false" />
                 </table:template>
             </table:Column>
 
+            <!-- 13. Initiator Accounting Document -->
+            <table:Column width="13rem">
+                <Label text="Initiator Accounting Document" />
+                <table:template>
+                    <Text text="{= ${in_accountingdocument} || '-' }" wrapping="false" />
+                </table:template>
+            </table:Column>
 
-            <!-- Created By -->
+            <!-- 14. Recipient Accounting Document -->
+            <table:Column width="13rem">
+                <Label text="Recipient Accounting Document" />
+                <table:template>
+                    <Text text="{= ${rec_accountingdocument} || '-' }" wrapping="false" />
+                </table:template>
+            </table:Column>
+
+            <!-- 15. Created By -->
             <table:Column width="12rem">
-                <Label text="Created By" />
-
+                <Label text="Initiator Preparer" />
                 <table:template>
                     <Text
-                        text="{createdbyuser}"
+                        text="{
+                            path: 'createdby',
+                            formatter: '.formatCreatedByName'
+                        }"
                         wrapping="false" />
                 </table:template>
             </table:Column>
+
+            <!-- 15b. Recipient Preparer -->
+            <table:Column width="12rem">
+                <Label text="Recipient Preparer" />
+                <table:template>
+                    <Text
+                        text="{
+                            path: 'rec_preparer',
+                            formatter: '.formatRecipientPreparerName'
+                        }"
+                        wrapping="false" />
+                </table:template>
+            </table:Column>
+           <!-- <table:Column width="12rem">
+                <Label text="Status" />
+                <table:template>
+                    <Text text="{= ${approval_status} || '-' }" wrapping="false" />
+                </table:template>
+            </table:Column> -->
+
+            <table:Column width="12rem">
+    <Label text="Status" />
+    <table:template>
+        <Text
+            text="{
+                path: 'approval_status',
+                formatter: '.formatApprovalStatus'
+            }"
+            wrapping="false" />
+    </table:template>
+</table:Column>
 
         </table:columns>
 
+        <!-- NAVIGATION ARROW -->
+        <table:rowActionTemplate>
+            <table:RowAction>
+                <table:items>
+                    <table:RowActionItem
+                        type="Navigation"
+                        press=".onRowActionNavigation" />
+                </table:items>
+            </table:RowAction>
+        </table:rowActionTemplate>
 
         <!-- NO DATA -->
         <table:noData>
@@ -398,8 +467,8 @@
                             <ToolbarSpacer/>
 
                             <Button
-                                text="Cancel"
-                                icon="sap-icon://cancel"
+                                text="Back"
+                                icon="sap-icon://nav-back"
                                 press="onCancel"
                                 visible="{/appState/isHeaderEditable}"/>
 
@@ -420,6 +489,12 @@
 
 
                             <!-- Phase 2: Recipient editing -->
+
+                              <Button
+                                text="Back"
+                                icon="sap-icon://nav-back"
+                                press="onCancel"
+                                visible="{/appState/isRecipientEditable}"/>
                             <Button
                                 text="Post"
                                 type="Accept"
@@ -442,6 +517,230 @@
 
                 </uxap:ObjectPageLayout>
 
+            </content>
+
+        </Page>
+
+        <!-- ========================================================= -->
+        <!-- JOURNAL ENTRY DETAIL - READ-ONLY                         -->
+        <!-- ========================================================= -->
+
+        <Page
+            id="jeDetailPage"
+            showNavButton="true"
+            navButtonPress=".onJEDetailBack"
+            title="{= ${/selectedEntry/accountingdocument_temp} ? 'Journal Entry: ' + ${/selectedEntry/accountingdocument_temp} : 'Journal Entry Detail' }"
+            enableScrolling="true">
+
+            <content>
+                <VBox class="sapUiMediumMargin">
+
+                    <!-- ─── Journal Entry Header ──────────────────── -->
+                    <Panel
+                        headerText="Journal Entry Header"
+                        expandable="false"
+                        expanded="true"
+                        class="sapUiSmallMarginBottom">
+
+                        <content>
+                            <layout:Grid
+                                defaultSpan="XL3 L4 M6 S12"
+                                hSpacing="2"
+                                vSpacing="1"
+                                class="sapUiSmallMarginTop sapUiSmallMarginBottom">
+
+                                <!-- Draft Accounting Document -->
+                                <VBox>
+                                    <Label text="Draft Accounting Document" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/accountingdocument_temp} || '-' }"/>
+                                </VBox>
+
+                                <!-- Accounting Document Type -->
+                                <VBox>
+                                    <Label text="Accounting Document Type" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/accountingdocumenttype} || '-' }"/>
+                                </VBox>
+
+                                <!-- Document Reference ID -->
+                                <VBox>
+                                    <Label text="Document Reference ID" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/documentreferenceid} || '-' }"/>
+                                </VBox>
+
+                                <!-- Document Header Text -->
+                                <VBox>
+                                    <Label text="Document Header Text" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/documentheadertext} || '-' }"/>
+                                </VBox>
+
+                                <!-- Initiator Company Code -->
+                                <VBox>
+                                    <Label text="Initiator Company Code" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/in_companycode} || '-' }"/>
+                                </VBox>
+
+                                <!-- Receiver Company Code -->
+                                <VBox>
+                                    <Label text="Receiver Company Code" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/rec_companycode} || '-' }"/>
+                                </VBox>
+
+                                <!-- Document Date -->
+                                <VBox>
+                                    <Label text="Document Date" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/documentdate} || '-' }"/>
+                                </VBox>
+
+                                <!-- Posting Date -->
+                                <VBox>
+                                    <Label text="Posting Date" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/postingdate} || '-' }"/>
+                                </VBox>
+
+                                <!-- Tax Code -->
+                                <VBox>
+                                    <Label text="Tax Code" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/taxcode} || '-' }"/>
+                                </VBox>
+
+                                <!-- Tax Amount -->
+                                <VBox>
+                                    <Label text="Tax Amount" design="Bold"/>
+                                    <Text text="{= (${/selectedEntry/tax_amount} || '-') + ( ${/selectedEntry/tax_amount} ? ' ' + (${/selectedEntry/currencycode} || '') : '' ) }"/>
+                                </VBox>
+
+                                <!-- Amount -->
+                                <VBox>
+                                    <Label text="Amount" design="Bold"/>
+                                    <Text text="{= (${/selectedEntry/amount} || '-') + ( ${/selectedEntry/amount} ? ' ' + (${/selectedEntry/currencycode} || '') : '' ) }"/>
+                                </VBox>
+
+                                <!-- Currency -->
+                                <VBox>
+                                    <Label text="Currency" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/currencycode} || '-' }"/>
+                                </VBox>
+
+                                <!-- Initiator Accounting Document -->
+                                <VBox>
+                                    <Label text="Initiator Accounting Document" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/in_accountingdocument} || '-' }"/>
+                                </VBox>
+
+                                <!-- Recipient Accounting Document -->
+                                <VBox>
+                                    <Label text="Recipient Accounting Document" design="Bold"/>
+                                    <Text text="{= ${/selectedEntry/rec_accountingdocument} || '-' }"/>
+                                </VBox>
+
+                            </layout:Grid>
+                        </content>
+                    </Panel>
+
+                    <!-- ─── JE Item Details ───────────────────────── -->
+                    <Panel
+                        expandable="false"
+                        expanded="true">
+
+                        <headerToolbar>
+                            <OverflowToolbar>
+                                <Title
+                                    text="{= 'JE Item Details (' + ${/jeItemCount} + ')' }"
+                                    level="H3"/>
+                            </OverflowToolbar>
+                        </headerToolbar>
+
+                        <content>
+                            <table:Table
+                                id="jeItemsTable"
+                                width="100%"
+                                rows="{/jeItems}"
+                                selectionMode="None"
+                                visibleRowCountMode="Auto"
+                                minAutoRowCount="5"
+                                alternateRowColors="true"
+                                class="sapUiSizeCompact">
+
+                                <table:columns>
+
+                                    <!-- JE Item No. -->
+                                    <table:Column width="9rem">
+                                        <Label text="JE Item No." />
+                                        <table:template>
+                                            <Text text="{= ${referencedocumentitem} || '-' }" wrapping="false"/>
+                                        </table:template>
+                                    </table:Column>
+
+                                    <!-- Initiator/Recipient Indicator -->
+                                    <table:Column width="10rem">
+                                        <Label text="Initiator/Recipient Ind." />
+                                        <table:template>
+                                            <Text text="{= ${initiator_recipient_ind} || '-' }" wrapping="false"/>
+                                        </table:template>
+                                    </table:Column>
+
+                                    <!-- Business Partner -->
+                                    <table:Column width="10rem">
+                                        <Label text="Business Partner" />
+                                        <table:template>
+                                            <Text text="{= ${business_partner} || '-' }" wrapping="false"/>
+                                        </table:template>
+                                    </table:Column>
+
+                                    <!-- Document Item Text -->
+                                    <table:Column width="14rem">
+                                        <Label text="Document Item Text" />
+                                        <table:template>
+                                            <Text text="{= ${documentitemtext} || '-' }" wrapping="false"/>
+                                        </table:template>
+                                    </table:Column>
+
+                                    <!-- G/L Account -->
+                                    <table:Column width="10rem">
+                                        <Label text="G/L Account" />
+                                        <table:template>
+                                            <Text text="{= ${glaccount} || '-' }" wrapping="false"/>
+                                        </table:template>
+                                    </table:Column>
+
+                                    <!-- Amount -->
+                                    <table:Column width="10rem" hAlign="End">
+                                        <Label text="Amount" />
+                                        <table:template>
+                                            <Text text="{= ${amountintransactioncurrency} || '-' }" wrapping="false"/>
+                                        </table:template>
+                                    </table:Column>
+
+                                    <!-- Currency -->
+                                    <table:Column width="8rem">
+                                        <Label text="Currency" />
+                                        <table:template>
+                                            <Text text="{= ${currencycode} || '-' }" wrapping="false"/>
+                                        </table:template>
+                                    </table:Column>
+
+                                    <!-- Debit/Credit Code -->
+                                    <table:Column width="9rem">
+                                        <Label text="Debit/Credit Code" />
+                                        <table:template>
+                                            <Text text="{= ${debitcreditcode} || '-' }" wrapping="false"/>
+                                        </table:template>
+                                    </table:Column>
+
+                                </table:columns>
+
+                                <table:noData>
+                                    <IllustratedMessage
+                                        illustrationType="sapIllus-NoData"
+                                        title="No JE Items"
+                                        description="No item details found for this journal entry." />
+                                </table:noData>
+
+                            </table:Table>
+                        </content>
+                    </Panel>
+
+                </VBox>
             </content>
 
         </Page>

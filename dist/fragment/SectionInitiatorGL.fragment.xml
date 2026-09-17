@@ -34,23 +34,22 @@
                             <f:content>
                                 <Label text="Tax / VAT Code" textAlign="Left"/>
                                 <VBox renderType="Bare">
-                                    <Select selectedKey="{/headerData/initiatorTaxCode}"
-                                            change="onInitiatorTaxCodeChange"
-                                            enabled="{= ${/appState/isHeaderEditable} &amp;&amp; ${/headerData/taxCodeVisible}}"
-                                            width="280px"
-                                            forceSelection="false"
-                                            valueState="{/headerData/initiatorTaxCodeState}"
-                                            valueStateText="Tax Code is required when a Tax Amount is entered."
-                                            items="{path: '/referenceData/initiatorTaxCodes', templateShareable: false}">
-                                        <core:ListItem key="{code}" text="{= ${code} + ' - ' + ${description}}"/>
-                                    </Select>
+                                    <Input value="{/headerData/initiatorTaxCode}"
+                                           change="onInitiatorTaxCodeChange"
+                                           enabled="{= ${/appState/isHeaderEditable} }"
+                                           width="280px"
+                                           showValueHelp="true"
+                                           valueHelpRequest="onInitiatorTaxCodeVH"
+                                           placeholder="Select Tax / VAT Code"
+                                           valueState="{/headerData/initiatorTaxCodeState}"
+                                           valueStateText="Tax Code is required when a Tax Amount is entered."/>
                                     <Text text="{/headerData/initiatorCountry}" class="sapUiTinyMarginTop"/>
                                 </VBox>
 
                                 <Label text="Tax Amount" textAlign="Left"/>
                                 <ObjectStatus
                                     text="{parts: [{path: '/headerData/initiatorTaxAmount'}, {path: '/headerData/currency'}], formatter: '.formatter.amountWithCurrency'}"
-                                    state="{path: '/headerData/initiatorTaxAmount', formatter: '.formatter.taxAmountState'}"/>
+                                    state="{parts: [{path: '/headerData/initiatorTaxAmount'}, {path: '/headerData/initiatorTaxMismatchVisible'}], formatter: '.formatter.taxAmountState'}"/>
                             </f:content>
                         </f:SimpleForm>
                         <MessageStrip
@@ -92,13 +91,17 @@
                             <Button text="Add Line" icon="sap-icon://add"
                                     press="onAddInitiatorLine" type="Ghost"
                                     enabled="{/appState/isHeaderEditable}"/>
-                            <Button text="Validate (F7)" icon="sap-icon://sys-find-next"
+                            <Button text="Simulate" icon="sap-icon://sys-find-next"
                                     press="onInitiatorValidate" type="Emphasized"
                                     class="sapUiSmallMarginBegin"/>
                             <ToolbarSeparator/>
                             <Button text="Download Template" icon="sap-icon://download" type="Ghost"
                                     press="onDownloadInitiatorTemplate"
                                     tooltip="Download GL offset line template (BP clearing line excluded)"/>
+                                     <Button text="Upload Template" icon="sap-icon://upload" type="Ghost"
+                                         press="onUploadInitiatorTemplate"
+                                          tooltip="Upload filled GL template — rows added from row 2 onwards, first line preserved"/>
+         
                             <ToolbarSpacer/>
                             <Text text="{= 'Lines: ' + ${/initiatorLines}.length + ' (incl. BP clearing)'}"/>
                         </Toolbar>
@@ -113,7 +116,7 @@
                         <t:Table id="initiatorGLTable"
                                  rows="{/initiatorLines}"
                                  selectionMode="None"
-                                 fixedColumnCount="4"
+                                 fixedColumnCount="5"
                                  alternateRowColors="true"
                                  columnHeaderHeight="36"
                                  enableColumnReordering="false"
@@ -123,7 +126,18 @@
                             </t:rowMode>
                             <t:columns>
 
+                                <t:Column width="50px" hAlign="Center">
+                                    <t:label><Label text=""/></t:label>
+                                    <t:template>
+                                        <Button icon="sap-icon://delete" type="Transparent"
+                                                visible="{= ${/appState/isHeaderEditable} &amp;&amp; !${isSystemLine}}"
+                                                press="onDeleteInitiatorLine"
+                                                tooltip="Delete line"/>
+                                    </t:template>
+                                </t:Column>
+
                                 <t:Column width="55px" hAlign="Center">
+                                
                                     <t:label><Label text="#"/></t:label>
                                     <t:template>
                                         <HBox justifyContent="Center" alignItems="Center">
@@ -186,7 +200,8 @@
 
                                 <t:Column width="110px">
                                     <t:label><Label text="Trdg Ptnr"/></t:label>
-                                    <t:template><Text text="{tradingPartner}" wrapping="false"/></t:template>
+                                   <!-- < t:template><Text text="{tradingPartner}" wrapping="false"/></t:template> -->
+                                    <t:template><Text text="" wrapping="false"/></t:template>
                                 </t:Column>
 
                                 <t:Column width="110px">
@@ -203,8 +218,11 @@
                                 <t:Column width="120px">
                                     <t:label><Label text="WBS Element"/></t:label>
                                     <t:template>
+                                    
                                         <Input value="{wbsElement}" enabled="{= ${/appState/isHeaderEditable} &amp;&amp; !${isSystemLine}}"
-                                               placeholder="—" width="110px"/>
+                                               placeholder="—" width="110px"
+                                                showValueHelp="true"
+                                               valueHelpRequest="onInitiatorWbsElementVH"/>
                                     </t:template>
                                 </t:Column>
 
@@ -290,16 +308,6 @@
                                 <t:Column width="110px">
                                     <t:label><Label text="LineRef3"/></t:label>
                                     <t:template><Input value="{lineRef3}" placeholder="—" width="100px" enabled="{/appState/isHeaderEditable}"/></t:template>
-                                </t:Column>
-
-                                <t:Column width="50px" hAlign="Center">
-                                    <t:label><Label text=""/></t:label>
-                                    <t:template>
-                                        <Button icon="sap-icon://delete" type="Transparent"
-                                                visible="{= ${/appState/isHeaderEditable} &amp;&amp; !${isSystemLine}}"
-                                                press="onDeleteInitiatorLine"
-                                                tooltip="Delete line"/>
-                                    </t:template>
                                 </t:Column>
 
                             </t:columns>
